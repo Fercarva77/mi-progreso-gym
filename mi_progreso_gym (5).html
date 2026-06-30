@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mi Progreso Gym</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1d24; --card2: #21252e; --border: #2c303a;
+    --text: #f0f1f3; --text-secondary: #9a9ea8; --text-muted: #6b6f78;
+    --accent: #3478e0; --accent-light: #1d3a5c;
+    --success: #4caf6f; --success-light: #1d3a28;
+    --danger: #e05a4c; --warning: #d8a23b;
+    --radius: 14px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; overscroll-behavior-y:none; }
+  body { padding-bottom:90px; min-height:100vh; }
+  .header { padding:18px 16px 12px; position:sticky; top:0; background:var(--bg); z-index:10; border-bottom:0.5px solid var(--border); }
+  .header h1 { font-size:20px; font-weight:600; margin:0 0 2px; }
+  .header .sub { font-size:13px; color:var(--text-secondary); }
+  .container { padding:16px; max-width:480px; margin:0 auto; }
+  .card { background:var(--card); border:0.5px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; }
+  .card-title { font-size:15px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between; }
+  .card-title .label { color:var(--text-secondary); font-size:12px; font-weight:400; }
+  input, select { background:var(--card2); border:0.5px solid var(--border); color:var(--text); border-radius:10px; padding:11px 12px; font-size:16px; font-family:var(--font); width:100%; }
+  input:focus, select:focus { outline:none; border-color:var(--accent); }
+  .row { display:flex; gap:10px; margin-bottom:10px; }
+  .row > * { flex:1; }
+  button { border:none; border-radius:10px; padding:12px 16px; font-size:15px; font-weight:600; font-family:var(--font); cursor:pointer; }
+  .btn-primary { background:var(--accent); color:white; width:100%; }
+  .btn-primary:active { opacity:0.8; }
+  .tabs { display:flex; gap:6px; margin-bottom:14px; background:var(--card2); border-radius:12px; padding:4px; }
+  .tab { flex:1; text-align:center; padding:9px 6px; border-radius:9px; font-size:13px; font-weight:600; color:var(--text-secondary); cursor:pointer; }
+  .tab.active { background:var(--accent); color:white; }
+  .view { display:none; }
+  .view.active { display:block; }
+  .day-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; background:var(--accent-light); color:#8ab4f0; margin-bottom:10px; }
+  .exercise-row { border-top:0.5px solid var(--border); padding:12px 0; }
+  .exercise-row:first-child { border-top:none; padding-top:0; }
+  .exercise-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+  .exercise-name { font-size:14px; font-weight:600; margin-bottom:2px; }
+  .exercise-target { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
+  .svg-toggle { font-size:11px; color:var(--accent); padding:3px 8px; background:var(--accent-light); border-radius:8px; white-space:nowrap; flex-shrink:0; }
+  .svg-panel { display:none; background:var(--card2); border-radius:10px; padding:10px; margin-bottom:10px; text-align:center; }
+  .svg-panel.open { display:block; }
+  .svg-panel svg { max-width:100%; height:auto; }
+  .svg-caption { font-size:11px; color:var(--text-muted); margin-top:6px; }
+  .sets-grid { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; align-items:center; margin-bottom:6px; }
+  .sets-grid .set-num { font-size:12px; color:var(--text-muted); text-align:center; }
+  .sets-grid input { padding:8px 8px; font-size:14px; text-align:center; }
+  .check-btn { width:32px; height:32px; border-radius:50%; background:var(--card2); border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text-muted); cursor:pointer; }
+  .check-btn.done { background:var(--success-light); color:var(--success); border-color:var(--success); }
+  .sets-header { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; margin-bottom:6px; }
+  .sets-header span { font-size:11px; color:var(--text-muted); text-align:center; }
+  .history-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:0.5px solid var(--border); font-size:13px; }
+  .history-item:first-child { border-top:none; }
+  .history-date { color:var(--text-secondary); font-size:12px; }
+  .empty-state { text-align:center; padding:30px 10px; color:var(--text-muted); font-size:13px; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-box { background:var(--card2); border-radius:10px; padding:12px; }
+  .stat-box .stat-label { font-size:11px; color:var(--text-secondary); margin-bottom:4px; }
+  .stat-box .stat-value { font-size:18px; font-weight:700; }
+  .stat-box .stat-delta { font-size:11px; margin-top:2px; }
+  .delta-down { color:var(--success); }
+  .delta-up { color:var(--danger); }
+  canvas { width:100% !important; height:180px !important; margin-top:10px; }
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:0.5px solid var(--border); display:flex; padding:8px 10px 18px; z-index:20; }
+  .nav-item { flex:1; text-align:center; padding:6px 0; color:var(--text-muted); font-size:11px; cursor:pointer; }
+  .nav-item .nav-icon { font-size:20px; display:block; margin-bottom:2px; }
+  .nav-item.active { color:var(--accent); }
+  .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--success); color:white; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; transition:all 0.25s ease; pointer-events:none; z-index:50; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Mi progreso</h1>
+  <div class="sub" id="dateLabel"></div>
+</div>
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-view="rutina">Rutina</div>
+    <div class="tab" data-view="peso">Peso</div>
+    <div class="tab" data-view="historial">Historial</div>
+  </div>
+  <div class="view active" id="view-rutina">
+    <div class="card">
+      <div class="card-title">¿Qué día entrenas hoy?</div>
+      <select id="daySelect"></select>
+    </div>
+    <div id="routineContent"></div>
+  </div>
+  <div class="view" id="view-peso">
+    <div class="card">
+      <div class="card-title">Registrar peso de hoy</div>
+      <div class="row">
+        <input type="number" id="weightLbs" placeholder="Libras" inputmode="decimal" step="0.1">
+        <input type="number" id="weightKg" placeholder="Kilos" inputmode="decimal" step="0.1">
+      </div>
+      <button class="btn-primary" id="saveWeightBtn">Guardar peso</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Resumen</div>
+      <div class="stat-grid" id="weightStats"></div>
+      <canvas id="weightChart"></canvas>
+    </div>
+  </div>
+  <div class="view" id="view-historial">
+    <div class="card">
+      <div class="card-title">Historial de pesos corporales</div>
+      <div id="weightHistory"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Historial de entrenamientos</div>
+      <div id="workoutHistory"></div>
+    </div>
+  </div>
+</div>
+<div class="bottom-nav">
+  <div class="nav-item active" data-view="rutina"><span class="nav-icon">&#127947;</span>Rutina</div>
+  <div class="nav-item" data-view="peso"><span class="nav-icon">&#9878;</span>Peso</div>
+  <div class="nav-item" data-view="historial"><span class="nav-icon">&#128202;</span>Historial</div>
+</div>
+<div class="toast" id="toast">Guardado</div>
+
+<script>
+// ===== SVG ILUSTRACIONES =====
+const SVGS = {
+  "Sentadilla con barra": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="30" y="8" width="60" height="4" rx="2" fill="#3478e0"/>
+    <circle cx="60" cy="30" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="40" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="38" y1="48" x2="82" y2="48" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="34" cy="48" r="5" fill="#3478e0" opacity="0.7"/>
+    <circle cx="86" cy="48" r="5" fill="#3478e0" opacity="0.7"/>
+    <line x1="60" y1="68" x2="42" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="78" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="42" y1="95" x2="38" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="78" y1="95" x2="82" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="32" y1="118" x2="48" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="72" y1="118" x2="88" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Espalda recta, rodillas al frente</text>
+  </svg>`,
+
+  "Prensa de piernas": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="70" width="100" height="8" rx="4" fill="#2c303a"/>
+    <rect x="10" y="78" width="100" height="40" rx="4" fill="#21252e" stroke="#2c303a" stroke-width="1"/>
+    <circle cx="60" cy="55" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="65" x2="60" y2="78" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="78" x2="42" y2="70" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="78" x2="78" y2="70" stroke="#f0f1f3" stroke-width="2.5"/>
+    <rect x="25" y="30" width="30" height="6" rx="3" fill="#3478e0"/>
+    <rect x="65" y="30" width="30" height="6" rx="3" fill="#3478e0"/>
+    <line x1="40" y1="36" x2="42" y2="70" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="80" y1="36" x2="78" y2="70" stroke="#f0f1f3" stroke-width="2"/>
+    <text x="60" y="132" text-anchor="middle" fill="#6b6f78" font-size="9">Pies al ancho de hombros</text>
+  </svg>`,
+
+  "Peso muerto rumano": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="58" y2="65" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="58" y1="65" x2="38" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="58" y1="65" x2="75" y2="88" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="38" y1="95" x2="36" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="88" x2="73" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="30" y1="118" x2="46" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="67" y1="118" x2="83" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="60" y1="40" x2="85" y2="50" stroke="#f0f1f3" stroke-width="2"/>
+    <rect x="80" y="50" width="22" height="8" rx="4" fill="#3478e0"/>
+    <circle cx="80" cy="54" r="5" fill="#3478e0" opacity="0.7"/>
+    <line x1="60" y1="40" x2="35" y2="50" stroke="#f0f1f3" stroke-width="2"/>
+    <rect x="18" y="50" width="22" height="8" rx="4" fill="#3478e0"/>
+    <circle cx="40" cy="54" r="5" fill="#3478e0" opacity="0.7"/>
+    <text x="60" y="133" text-anchor="middle" fill="#6b6f78" font-size="9">Espalda recta, baja controlado</text>
+  </svg>`,
+
+  "Extensión de cuádriceps": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="55" width="80" height="30" rx="8" fill="#21252e" stroke="#2c303a" stroke-width="1"/>
+    <circle cx="60" cy="30" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="40" x2="60" y2="55" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="55" x2="45" y2="55" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="55" x2="75" y2="55" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="45" y1="85" x2="40" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="85" x2="80" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="34" y1="118" x2="50" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="74" y1="118" x2="90" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="40" y1="118" x2="28" y2="100" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <line x1="80" y1="118" x2="92" y2="100" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="26" cy="97" r="5" fill="#3478e0" opacity="0.8"/>
+    <circle cx="94" cy="97" r="5" fill="#3478e0" opacity="0.8"/>
+    <text x="60" y="133" text-anchor="middle" fill="#6b6f78" font-size="9">Extiende hasta arriba, baja lento</text>
+  </svg>`,
+
+  "Curl femoral": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="40" width="80" height="30" rx="8" fill="#21252e" stroke="#2c303a" stroke-width="1"/>
+    <circle cx="60" cy="20" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="30" x2="60" y2="40" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="70" x2="42" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="70" x2="78" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="42" y1="95" x2="52" y2="115" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <line x1="78" y1="95" x2="68" y2="115" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="53" cy="117" r="5" fill="#3478e0" opacity="0.8"/>
+    <circle cx="67" cy="117" r="5" fill="#3478e0" opacity="0.8"/>
+    <text x="60" y="133" text-anchor="middle" fill="#6b6f78" font-size="9">Dobla la rodilla hacia arriba</text>
+  </svg>`,
+
+  "Elevación de talones": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="40" y1="48" x2="80" y2="48" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="68" x2="45" y2="90" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="75" y2="90" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="90" x2="43" y2="108" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="90" x2="77" y2="108" stroke="#f0f1f3" stroke-width="2.5"/>
+    <rect x="35" y="108" width="16" height="6" rx="2" fill="#3478e0"/>
+    <rect x="69" y="108" width="16" height="6" rx="2" fill="#3478e0"/>
+    <line x1="43" y1="108" x2="43" y2="100" stroke="#3478e0" stroke-width="2"/>
+    <line x1="77" y1="108" x2="77" y2="100" stroke="#3478e0" stroke-width="2"/>
+    <text x="60" y="128" text-anchor="middle" fill="#6b6f78" font-size="9">Sube en puntillas, baja lento</text>
+  </svg>`,
+
+  "Press banca (barra o mancuernas)": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="70" width="90" height="12" rx="4" fill="#21252e" stroke="#2c303a"/>
+    <circle cx="60" cy="45" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="55" x2="60" y2="70" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="62" x2="42" y2="55" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="62" x2="78" y2="55" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="25" y1="52" x2="95" y2="52" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="22" cy="52" r="6" fill="#3478e0" opacity="0.8"/>
+    <circle cx="98" cy="52" r="6" fill="#3478e0" opacity="0.8"/>
+    <line x1="42" y1="55" x2="40" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="78" y1="55" x2="80" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="70" x2="45" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="70" x2="75" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="95" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="95" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Baja a pecho, sube extendido</text>
+  </svg>`,
+
+  "Press inclinado mancuernas": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="80" width="100" height="10" rx="4" fill="#21252e" stroke="#2c303a"/>
+    <circle cx="55" cy="45" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="55" y1="55" x2="57" y2="80" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="57" y1="80" x2="40" y2="80" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="57" y1="80" x2="75" y2="80" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="55" y1="62" x2="35" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="55" y1="62" x2="75" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <rect x="22" y="48" width="16" height="7" rx="3" fill="#3478e0"/>
+    <rect x="72" y="48" width="16" height="7" rx="3" fill="#3478e0"/>
+    <line x1="40" y1="80" x2="38" y2="110" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="80" x2="77" y2="110" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="32" y1="110" x2="48" y2="110" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="110" x2="87" y2="110" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="130" text-anchor="middle" fill="#6b6f78" font-size="9">Banco a 30-45°, empuja arriba</text>
+  </svg>`,
+
+  "Aperturas banca o cable": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="65" width="90" height="12" rx="4" fill="#21252e" stroke="#2c303a"/>
+    <circle cx="60" cy="42" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="52" x2="60" y2="65" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="58" x2="32" y2="68" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="58" x2="88" y2="68" stroke="#f0f1f3" stroke-width="2"/>
+    <circle cx="28" cy="68" r="6" fill="#3478e0" opacity="0.8"/>
+    <circle cx="92" cy="68" r="6" fill="#3478e0" opacity="0.8"/>
+    <line x1="60" y1="65" x2="45" y2="90" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="65" x2="75" y2="90" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="90" x2="43" y2="115" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="90" x2="77" y2="115" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="115" x2="53" y2="115" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="115" x2="87" y2="115" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="133" text-anchor="middle" fill="#6b6f78" font-size="9">Abre como abrazo, cierra arriba</text>
+  </svg>`,
+
+  "Fondos o press francés": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <line x1="30" y1="40" x2="30" y2="115" stroke="#2c303a" stroke-width="4" stroke-linecap="round"/>
+    <line x1="90" y1="40" x2="90" y2="115" stroke="#2c303a" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="60" cy="20" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="30" x2="60" y2="52" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="45" x2="35" y2="55" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="45" x2="85" y2="55" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="35" y1="55" x2="30" y2="72" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="85" y1="55" x2="90" y2="72" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="52" x2="48" y2="80" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="52" x2="72" y2="80" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="48" y1="80" x2="46" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="72" y1="80" x2="74" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="40" y1="105" x2="56" y2="105" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="68" y1="105" x2="84" y2="105" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="125" text-anchor="middle" fill="#6b6f78" font-size="9">Baja hasta 90°, empuja arriba</text>
+  </svg>`,
+
+  "Extensión tríceps en polea": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="52" y="8" width="16" height="20" rx="4" fill="#21252e" stroke="#2c303a"/>
+    <line x1="60" y1="28" x2="60" y2="45" stroke="#3478e0" stroke-width="2"/>
+    <rect x="45" y="42" width="30" height="6" rx="3" fill="#3478e0"/>
+    <circle cx="60" cy="22" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="32" x2="60" y2="42" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="42" x2="45" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="42" x2="75" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="45" y1="52" x2="43" y2="48" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="75" y1="52" x2="77" y2="48" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="43" y1="48" x2="40" y2="95" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="77" y1="48" x2="80" y2="95" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="34" y="92" width="14" height="6" rx="3" fill="#3478e0"/>
+    <rect x="72" y="92" width="14" height="6" rx="3" fill="#3478e0"/>
+    <line x1="60" y1="65" x2="45" y2="90" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="65" x2="75" y2="90" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="90" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="90" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Codos fijos, extiende hacia abajo</text>
+  </svg>`,
+
+  "Press militar mancuernas": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="60" y2="65" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="42" x2="35" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="42" x2="85" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="35" y1="52" x2="28" y2="38" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="85" y1="52" x2="92" y2="38" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="20" y="32" width="12" height="7" rx="3" fill="#3478e0"/>
+    <rect x="88" y="32" width="12" height="7" rx="3" fill="#3478e0"/>
+    <line x1="60" y1="65" x2="45" y2="92" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="65" x2="75" y2="92" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="92" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="92" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Empuja arriba hasta extender</text>
+  </svg>`,
+
+  "Elevaciones laterales": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="42" x2="28" y2="38" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="60" y1="42" x2="92" y2="38" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="24" cy="38" r="6" fill="#3478e0" opacity="0.8"/>
+    <circle cx="96" cy="38" r="6" fill="#3478e0" opacity="0.8"/>
+    <line x1="60" y1="68" x2="45" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="75" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="95" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="95" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="133" text-anchor="middle" fill="#6b6f78" font-size="9">Sube hasta hombros, baja lento</text>
+  </svg>`,
+
+  "Elevaciones frontales": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="42" x2="42" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="42" x2="78" y2="52" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="42" y1="52" x2="36" y2="30" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="78" y1="52" x2="84" y2="30" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="28" y="24" width="14" height="7" rx="3" fill="#3478e0"/>
+    <rect x="78" y="24" width="14" height="7" rx="3" fill="#3478e0"/>
+    <line x1="60" y1="68" x2="45" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="75" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="95" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="95" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="133" text-anchor="middle" fill="#6b6f78" font-size="9">Brazo recto hacia adelante</text>
+  </svg>`,
+
+  "Pájaros (deltoide posterior)": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="35" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="45" x2="58" y2="72" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="58" y1="72" x2="40" y2="80" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="58" y1="72" x2="76" y2="80" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="40" y1="80" x2="18" y2="68" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="76" y1="80" x2="102" y2="68" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="15" cy="66" r="5" fill="#3478e0" opacity="0.8"/>
+    <circle cx="105" cy="66" r="5" fill="#3478e0" opacity="0.8"/>
+    <line x1="40" y1="80" x2="38" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="76" y1="80" x2="78" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="32" y1="105" x2="48" y2="105" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="72" y1="105" x2="88" y2="105" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="125" text-anchor="middle" fill="#6b6f78" font-size="9">Inclinado, abre los brazos</text>
+  </svg>`,
+
+  "Plancha": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <line x1="10" y1="95" width="100" height="4" stroke="#2c303a" stroke-width="4" stroke-linecap="round" x2="110" y2="95"/>
+    <circle cx="88" cy="50" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="88" y1="60" x2="50" y2="72" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="50" y1="72" x2="28" y2="78" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="50" y1="72" x2="55" y2="88" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="28" y1="78" x2="24" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="55" y1="88" x2="60" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="24" y1="95" x2="22" y2="88" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <line x1="60" y1="95" x2="62" y2="88" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <text x="60" y="118" text-anchor="middle" fill="#6b6f78" font-size="9">Cuerpo recto, core apretado</text>
+  </svg>`,
+
+  "Elevación de piernas": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="52" y="5" width="16" height="18" rx="4" fill="#21252e" stroke="#2c303a"/>
+    <line x1="60" y1="23" x2="60" y2="42" stroke="#2c303a" stroke-width="3"/>
+    <circle cx="60" cy="50" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="60" x2="60" y2="82" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="65" x2="44" y2="60" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="65" x2="76" y2="60" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="44" y1="60" x2="42" y2="32" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="76" y1="60" x2="78" y2="32" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="82" x2="44" y2="60" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="60" y1="82" x2="76" y2="60" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="108" text-anchor="middle" fill="#6b6f78" font-size="9">Sube piernas juntas, baja lento</text>
+  </svg>`,
+
+  "Dominadas o jalón en polea": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <line x1="15" y1="18" x2="105" y2="18" stroke="#2c303a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="35" y1="18" x2="35" y2="28" stroke="#3478e0" stroke-width="2.5"/>
+    <line x1="85" y1="18" x2="85" y2="28" stroke="#3478e0" stroke-width="2.5"/>
+    <circle cx="60" cy="38" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="48" x2="60" y2="78" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="55" x2="38" y2="48" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="55" x2="82" y2="48" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="38" y1="48" x2="35" y2="28" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="82" y1="48" x2="85" y2="28" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="78" x2="45" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="78" x2="75" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="105" x2="43" y2="128" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="105" x2="77" y2="128" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="128" x2="53" y2="128" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="128" x2="87" y2="128" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="140" text-anchor="middle" fill="#6b6f78" font-size="9">Jala hasta la barbilla</text>
+  </svg>`,
+
+  "Remo con barra o mancuerna": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="30" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="40" x2="58" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="58" y1="68" x2="38" y2="78" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="58" y1="68" x2="76" y2="78" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="38" y1="78" x2="36" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="76" y1="78" x2="78" y2="105" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="30" y1="105" x2="46" y2="105" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="72" y1="105" x2="88" y2="105" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="58" y1="55" x2="88" y2="65" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="84" y="62" width="18" height="7" rx="3" fill="#3478e0"/>
+    <circle cx="84" cy="66" r="5" fill="#3478e0" opacity="0.7"/>
+    <text x="60" y="125" text-anchor="middle" fill="#6b6f78" font-size="9">Jala al abdomen, codo atrás</text>
+  </svg>`,
+
+  "Remo en polea baja": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="68" width="20" height="50" rx="4" fill="#21252e" stroke="#2c303a"/>
+    <circle cx="15" cy="75" r="5" fill="#3478e0"/>
+    <line x1="15" y1="75" x2="45" y2="65" stroke="#3478e0" stroke-width="2"/>
+    <circle cx="60" cy="35" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="45" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="57" x2="46" y2="65" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="57" x2="74" y2="65" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="46" y1="65" x2="45" y2="65" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="68" x2="45" y2="92" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="75" y2="92" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="92" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="92" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="68" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Espalda recta, jala al ombligo</text>
+  </svg>`,
+
+  "Curl de bíceps con barra": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="48" x2="42" y2="58" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="48" x2="78" y2="58" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="42" y1="58" x2="38" y2="78" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="78" y1="58" x2="82" y2="78" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="28" y1="78" x2="92" y2="78" stroke="#3478e0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="24" cy="78" r="6" fill="#3478e0" opacity="0.8"/>
+    <circle cx="96" cy="78" r="6" fill="#3478e0" opacity="0.8"/>
+    <line x1="60" y1="68" x2="45" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="75" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="95" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="95" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Codos fijos, sube y baja lento</text>
+  </svg>`,
+
+  "Curl martillo": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="18" r="10" fill="none" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="28" x2="60" y2="68" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="48" x2="42" y2="58" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="60" y1="48" x2="78" y2="58" stroke="#f0f1f3" stroke-width="2"/>
+    <line x1="42" y1="58" x2="36" y2="75" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="78" y1="58" x2="84" y2="75" stroke="#3478e0" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="28" y="72" width="12" height="20" rx="4" fill="#3478e0"/>
+    <rect x="80" y="72" width="12" height="20" rx="4" fill="#3478e0"/>
+    <line x1="60" y1="68" x2="45" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="60" y1="68" x2="75" y2="95" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="45" y1="95" x2="43" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="75" y1="95" x2="77" y2="118" stroke="#f0f1f3" stroke-width="2.5"/>
+    <line x1="37" y1="118" x2="53" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="71" y1="118" x2="87" y2="118" stroke="#f0f1f3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="60" y="135" text-anchor="middle" fill="#6b6f78" font-size="9">Pulgar arriba, agarre neutro</text>
+  </svg>`
+};
+
+// ===== RUTINA =====
+const RUTINA = {
+  lunes: { nombre:"Lunes — Piernas (tarde) + Trote (mañana)", grupo:"Piernas", cardio:"Trote 3 millas en la mañana, ritmo 7-7.5", ejercicios:[
+    {nombre:"Sentadilla con barra", target:"4 series x 8-10 reps", sets:4},
+    {nombre:"Prensa de piernas", target:"3 series x 10-12 reps", sets:3},
+    {nombre:"Peso muerto rumano", target:"3 series x 8-10 reps", sets:3},
+    {nombre:"Extensión de cuádriceps", target:"3 series x 12 reps", sets:3},
+    {nombre:"Curl femoral", target:"3 series x 12 reps", sets:3},
+    {nombre:"Elevación de talones", target:"4 series x 15 reps", sets:4}
+  ]},
+  martes: { nombre:"Martes — Pecho y tríceps (madrugada)", grupo:"Pecho / Tríceps", cardio:null, ejercicios:[
+    {nombre:"Press banca (barra o mancuernas)", target:"4 series x 8-10 reps", sets:4},
+    {nombre:"Press inclinado mancuernas", target:"3 series x 10 reps", sets:3},
+    {nombre:"Aperturas banca o cable", target:"3 series x 12 reps", sets:3},
+    {nombre:"Fondos o press francés", target:"3 series x 10 reps", sets:3},
+    {nombre:"Extensión tríceps en polea", target:"3 series x 12 reps", sets:3}
+  ]},
+  miercoles: { nombre:"Miércoles — Hombros y core (tarde) + Trote (mañana)", grupo:"Hombros / Core", cardio:"Trote 3 millas en la mañana, ritmo 7-7.5", ejercicios:[
+    {nombre:"Press militar mancuernas", target:"4 series x 8-10 reps", sets:4},
+    {nombre:"Elevaciones laterales", target:"3 series x 12-15 reps", sets:3},
+    {nombre:"Elevaciones frontales", target:"2 series x 12 reps", sets:2},
+    {nombre:"Pájaros (deltoide posterior)", target:"3 series x 12 reps", sets:3},
+    {nombre:"Plancha", target:"3 series x 30-45 seg", sets:3},
+    {nombre:"Elevación de piernas", target:"3 series x 12-15 reps", sets:3}
+  ]},
+  jueves: { nombre:"Jueves — Espalda y bíceps (madrugada)", grupo:"Espalda / Bíceps", cardio:null, ejercicios:[
+    {nombre:"Dominadas o jalón en polea", target:"4 series x 8-10 reps", sets:4},
+    {nombre:"Remo con barra o mancuerna", target:"3 series x 10 reps", sets:3},
+    {nombre:"Remo en polea baja", target:"3 series x 12 reps", sets:3},
+    {nombre:"Curl de bíceps con barra", target:"3 series x 10 reps", sets:3},
+    {nombre:"Curl martillo", target:"3 series x 12 reps", sets:3}
+  ]},
+  viernes: { nombre:"Viernes — Trote (mañana)", grupo:"Cardio", cardio:"Trote 3 millas, ritmo 7-7.5", ejercicios:[] },
+  sabado: { nombre:"Sábado — Trote largo (mañana)", grupo:"Cardio largo", cardio:"Trote largo 5 millas, ritmo variable 7-9", ejercicios:[] },
+  domingo: { nombre:"Domingo — Descanso", grupo:"Descanso", cardio:"Descanso total o caminata ligera", ejercicios:[] }
+};
+
+const DIAS_ORDEN = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"];
+const DIAS_LABEL = {lunes:"Lunes",martes:"Martes",miercoles:"Miércoles",jueves:"Jueves",viernes:"Viernes",sabado:"Sábado",domingo:"Domingo"};
+
+// ===== STORAGE =====
+const STORAGE_KEY = "gymTrackerData_v2";
+function loadData() { try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e){} return {weights:[],workouts:[]}; }
+function saveData(d) { localStorage.setItem(STORAGE_KEY,JSON.stringify(d)); }
+let DATA = loadData();
+
+// ===== HELPERS =====
+const LB_PER_KG = 2.20462;
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function formatDate(s) { const d=new Date(s+'T00:00:00'); const m=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]; return `${d.getDate()} ${m[d.getMonth()]}`; }
+function todayDayKey() { const m=["domingo","lunes","martes","miercoles","jueves","viernes","sabado"]; return m[new Date().getDay()]; }
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+
+// ===== NAV =====
+function setView(view) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.tab,.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
+  if(view==='peso') renderPesoView();
+  if(view==='historial') renderHistorialView();
+}
+document.querySelectorAll('.tab,.nav-item').forEach(el=>el.addEventListener('click',()=>setView(el.dataset.view)));
+
+function renderHeaderDate() {
+  const d=new Date();
+  const dias=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  document.getElementById('dateLabel').textContent=`${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]}`;
+}
+
+// ===== RUTINA =====
+const daySelect = document.getElementById('daySelect');
+DIAS_ORDEN.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=DIAS_LABEL[k]; daySelect.appendChild(o); });
+
+function getTodayWorkoutKey(dk) { return `${todayStr()}_${dk}`; }
+function getSavedSets(dk, name) { const w=DATA.workouts.find(w=>w.key===getTodayWorkoutKey(dk)); return w?w.exercises[name]||null:null; }
+function getSavedCardio(dk) { const w=DATA.workouts.find(w=>w.key===getTodayWorkoutKey(dk)); return w&&w.cardio?w.cardio:null; }
+
+function renderRoutine() {
+  const dayKey = daySelect.value;
+  const day = RUTINA[dayKey];
+  const container = document.getElementById('routineContent');
+  let html = '';
+
+  html += `<div class="card"><span class="day-pill">${day.grupo}</span><div class="card-title" style="margin-bottom:4px;">${day.nombre}</div>`;
+  if(day.cardio) html += `<div class="exercise-target">${day.cardio}</div>`;
+  html += `</div>`;
+
+  if(day.cardio) {
+    const sc = getSavedCardio(dayKey)||{};
+    html += `<div class="card"><div class="card-title">Registrar trote de hoy <span class="label">opcional</span></div>
+      <div class="row">
+        <input type="number" inputmode="decimal" placeholder="Distancia (mi)" id="cardioDist" value="${sc.distancia||''}">
+        <input type="number" inputmode="numeric" placeholder="Calorías" id="cardioCal" value="${sc.calorias||''}">
+      </div>
+      <div class="row">
+        <input type="text" placeholder="Duración (mm:ss)" id="cardioDur" value="${sc.duracion||''}">
+        <input type="number" inputmode="decimal" placeholder="Velocidad (mph)" id="cardioVel" value="${sc.velocidad||''}">
+      </div></div>`;
+  }
+
+  if(day.ejercicios.length > 0) {
+    html += `<div class="card">`;
+    day.ejercicios.forEach((ex, exIdx) => {
+      const saved = getSavedSets(dayKey, ex.nombre)||[];
+      const hasSvg = !!SVGS[ex.nombre];
+      html += `<div class="exercise-row">`;
+      html += `<div class="exercise-header">
+        <div>
+          <div class="exercise-name">${ex.nombre}</div>
+          <div class="exercise-target">${ex.target}</div>
+        </div>
+        ${hasSvg ? `<div class="svg-toggle" data-idx="${exIdx}">Ver</div>` : ''}
+      </div>`;
+      if(hasSvg) {
+        html += `<div class="svg-panel" id="svgpanel-${exIdx}">
+          ${SVGS[ex.nombre]}
+        </div>`;
+      }
+      html += `<div class="sets-header"><span>#</span><span>Peso (lb)</span><span>Reps</span><span></span></div>`;
+      for(let s=0; s<ex.sets; s++) {
+        const sd = saved[s]||{peso:'',reps:'',done:false};
+        html += `<div class="sets-grid">
+          <div class="set-num">${s+1}</div>
+          <input type="number" inputmode="decimal" placeholder="lb" value="${sd.peso}" data-ex="${exIdx}" data-set="${s}" data-field="peso" class="set-input">
+          <input type="number" inputmode="numeric" placeholder="reps" value="${sd.reps}" data-ex="${exIdx}" data-set="${s}" data-field="reps" class="set-input">
+          <div class="check-btn ${sd.done?'done':''}" data-ex="${exIdx}" data-set="${s}">&#10003;</div>
+        </div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="card"><div class="empty-state">Día de descanso o solo cardio.</div></div>`;
+  }
+
+  if(day.ejercicios.length > 0 || day.cardio) {
+    html += `<button class="btn-primary" id="saveWorkoutBtn">Guardar entrenamiento de hoy</button>`;
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('done')));
+  container.querySelectorAll('.svg-toggle').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const panel = document.getElementById('svgpanel-'+btn.dataset.idx);
+      const open = panel.classList.toggle('open');
+      btn.textContent = open ? 'Ocultar' : 'Ver';
+    });
+  });
+}
+
+function collectCardioData() {
+  const d=document.getElementById('cardioDist');
+  const c=document.getElementById('cardioCal');
+  const dur=document.getElementById('cardioDur');
+  const v=document.getElementById('cardioVel');
+  if(!d&&!c&&!dur&&!v) return null;
+  const obj={distancia:d?d.value:'',calorias:c?c.value:'',duracion:dur?dur.value:'',velocidad:v?v.value:''};
+  if(!obj.distancia&&!obj.calorias&&!obj.duracion&&!obj.velocidad) return null;
+  return obj;
+}
+
+function collectWorkoutData(dayKey) {
+  const day=RUTINA[dayKey]; const exercises={};
+  day.ejercicios.forEach((ex,exIdx)=>{
+    const sets=[];
+    for(let s=0;s<ex.sets;s++){
+      const pi=document.querySelector(`.set-input[data-ex="${exIdx}"][data-set="${s}"][data-field="peso"]`);
+      const ri=document.querySelector(`.set-input[data-ex="${exIdx}"][data-set="${s}"][data-field="reps"]`);
+      const cb=document.querySelector(`.check-btn[data-ex="${exIdx}"][data-set="${s}"]`);
+      sets.push({peso:pi?pi.value:'',reps:ri?ri.value:'',done:cb?cb.classList.contains('done'):false});
+    }
+    exercises[ex.nombre]=sets;
+  });
+  return exercises;
+}
+
+function saveWorkout() {
+  const dk=daySelect.value; const key=getTodayWorkoutKey(dk);
+  const exercises=collectWorkoutData(dk); const cardio=collectCardioData();
+  let w=DATA.workouts.find(w=>w.key===key);
+  if(!w){w={key,date:todayStr(),dayKey:dk,exercises:{}}; DATA.workouts.push(w);}
+  w.exercises=exercises; w.cardio=cardio; w.date=todayStr();
+  saveData(DATA); showToast("Entrenamiento guardado ✓");
+}
+
+daySelect.addEventListener('change',renderRoutine);
+document.addEventListener('click',e=>{ if(e.target&&e.target.id==='saveWorkoutBtn') saveWorkout(); });
+daySelect.value=todayDayKey();
+renderRoutine();
+
+// ===== PESO =====
+const wLbs=document.getElementById('weightLbs');
+const wKg=document.getElementById('weightKg');
+wLbs.addEventListener('input',()=>{ if(wLbs.value) wKg.value=(parseFloat(wLbs.value)/LB_PER_KG).toFixed(1); });
+wKg.addEventListener('input',()=>{ if(wKg.value) wLbs.value=(parseFloat(wKg.value)*LB_PER_KG).toFixed(1); });
+
+document.getElementById('saveWeightBtn').addEventListener('click',()=>{
+  const lbs=parseFloat(wLbs.value), kg=parseFloat(wKg.value);
+  if(!lbs&&!kg){showToast("Ingresa un peso");return;}
+  const fl=lbs||(kg*LB_PER_KG), fk=kg||(lbs/LB_PER_KG);
+  const today=todayStr();
+  const idx=DATA.weights.findIndex(w=>w.date===today);
+  const entry={date:today,lbs:Math.round(fl*10)/10,kg:Math.round(fk*10)/10};
+  if(idx>=0) DATA.weights[idx]=entry; else DATA.weights.push(entry);
+  DATA.weights.sort((a,b)=>a.date.localeCompare(b.date));
+  saveData(DATA); wLbs.value=''; wKg.value='';
+  showToast("Peso guardado ✓"); renderPesoView();
+});
+
+function renderPesoView() {
+  const stats=document.getElementById('weightStats');
+  const weights=DATA.weights;
+  if(weights.length===0){stats.innerHTML=`<div class="empty-state" style="grid-column:1/-1">Aún no hay registros de peso.</div>`;return;}
+  const latest=weights[weights.length-1], first=weights[0];
+  const delta=(latest.lbs-first.lbs).toFixed(1);
+  const dc=delta<=0?'delta-down':'delta-up', ds=delta>0?'+':'';
+  let weekDelta=null;
+  const ld=new Date(latest.date);
+  for(let i=weights.length-1;i>=0;i--){
+    const diff=(ld-new Date(weights[i].date))/(1000*60*60*24);
+    if(diff>=6){weekDelta=(latest.lbs-weights[i].lbs).toFixed(1);break;}
+  }
+  stats.innerHTML=`
+    <div class="stat-box"><div class="stat-label">Peso actual</div><div class="stat-value">${latest.lbs} lb</div><div class="stat-delta" style="color:var(--text-muted)">${latest.kg} kg</div></div>
+    <div class="stat-box"><div class="stat-label">Cambio total</div><div class="stat-value ${dc}">${ds}${delta} lb</div><div class="stat-delta" style="color:var(--text-muted)">desde ${formatDate(first.date)}</div></div>
+    ${weekDelta!==null?`<div class="stat-box" style="grid-column:1/-1"><div class="stat-label">Última semana</div><div class="stat-value ${weekDelta<=0?'delta-down':'delta-up'}">${weekDelta>0?'+':''}${weekDelta} lb</div></div>`:''}
+  `;
+  drawChart(weights);
+}
+
+function drawChart(weights) {
+  const canvas=document.getElementById('weightChart');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr; canvas.height=180*dpr; ctx.scale(dpr,dpr);
+  const W=rect.width, H=180;
+  ctx.clearRect(0,0,W,H);
+  if(weights.length<2){ctx.fillStyle='#6b6f78';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Agrega al menos 2 registros para ver el gráfico',W/2,H/2);return;}
+  const recent=weights.slice(-30);
+  const vals=recent.map(w=>w.lbs);
+  const minV=Math.min(...vals)-1, maxV=Math.max(...vals)+1, range=maxV-minV||1;
+  const pL=36,pR=10,pT=14,pB=22, cW=W-pL-pR, cH=H-pT-pB;
+  ctx.strokeStyle='#2c303a'; ctx.lineWidth=1;
+  for(let i=0;i<=3;i++){
+    const y=pT+(cH/3)*i;
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+    ctx.fillStyle='#6b6f78'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+    ctx.fillText((maxV-(range/3)*i).toFixed(0),pL-6,y+3);
+  }
+  ctx.beginPath(); ctx.strokeStyle='#3478e0'; ctx.lineWidth=2;
+  recent.forEach((w,i)=>{
+    const x=pL+(cW/(recent.length-1))*i, y=pT+cH-((w.lbs-minV)/range)*cH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }); ctx.stroke();
+  recent.forEach((w,i)=>{
+    const x=pL+(cW/(recent.length-1))*i, y=pT+cH-((w.lbs-minV)/range)*cH;
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle='#3478e0'; ctx.fill();
+  });
+  ctx.fillStyle='#6b6f78'; ctx.font='10px sans-serif';
+  ctx.textAlign='left'; ctx.fillText(formatDate(recent[0].date),pL,H-4);
+  ctx.textAlign='right'; ctx.fillText(formatDate(recent[recent.length-1].date),W-pR,H-4);
+}
+window.addEventListener('resize',()=>{ if(document.getElementById('view-peso').classList.contains('active')) renderPesoView(); });
+
+// ===== HISTORIAL =====
+function renderHistorialView() {
+  const wh=document.getElementById('weightHistory');
+  const wkh=document.getElementById('workoutHistory');
+  const sw=[...DATA.weights].sort((a,b)=>b.date.localeCompare(a.date));
+  wh.innerHTML=sw.length===0?`<div class="empty-state">Sin registros aún.</div>`:sw.slice(0,20).map(w=>`<div class="history-item"><span class="history-date">${formatDate(w.date)}</span><span>${w.lbs} lb &nbsp;/&nbsp; ${w.kg} kg</span></div>`).join('');
+  const swk=[...DATA.workouts].sort((a,b)=>b.date.localeCompare(a.date));
+  if(swk.length===0){wkh.innerHTML=`<div class="empty-state">Sin entrenamientos registrados aún.</div>`;return;}
+  wkh.innerHTML=swk.slice(0,15).map(w=>{
+    const ex=Object.keys(w.exercises||{}).length;
+    const dl=DIAS_LABEL[w.dayKey]||w.dayKey;
+    let det=ex>0?`${ex} ejercicios`:'';
+    if(w.cardio){const c=w.cardio,p=[];if(c.distancia)p.push(`${c.distancia}mi`);if(c.duracion)p.push(c.duracion);if(c.calorias)p.push(`${c.calorias}cal`);if(p.length)det+=(det?' · ':'')+'Trote: '+p.join(', ');}
+    return `<div class="history-item"><span class="history-date">${formatDate(w.date)}</span><span>${dl} · ${det||'Sin datos'}</span></div>`;
+  }).join('');
+}
+
+renderHeaderDate();
+</script>
+</body>
+</html>
