@@ -5,15 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Mi Progreso Gym</title>
+<title>Carvajal</title>
 <style>
   :root {
-    --bg: #0f1115; --card: #1a1d24; --card2: #21252e; --border: #2c303a;
-    --text: #f0f1f3; --text-secondary: #9a9ea8; --text-muted: #6b6f78;
-    --accent: #3478e0; --accent-light: #1d3a5c;
-    --success: #4caf6f; --success-light: #1d3a28;
-    --danger: #e05a4c; --warning: #d8a23b;
+    --bg: #f5f7fa; --card: #ffffff; --card2: #f0f3f7; --border: #dde3ea;
+    --text: #1c2530; --text-secondary: #5b6b7a; --text-muted: #8a96a3;
+    --accent: #2389a0; --accent-light: #e3f3f6; --accent-bright: #1c7488;
+    --success: #2e9a5c; --success-light: #e3f5e9;
+    --danger: #d0563f; --warning: #b8841f;
     --radius: 14px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --g-piernas: #3470b0; --g-piernas-bg: #e7eef8;
+    --g-pecho: #2a9572; --g-pecho-bg: #e5f4ee;
+    --g-espalda: #2f8fa3; --g-espalda-bg: #e4f2f5;
+    --g-hombros: #4a9a6e; --g-hombros-bg: #e7f4ec;
+    --g-cardio: #3f8ec9; --g-cardio-bg: #e6f1fa;
+    --g-descanso: #8a96a3; --g-descanso-bg: #eef0f3;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; overscroll-behavior-y:none; }
@@ -32,26 +38,32 @@
   button { border:none; border-radius:10px; padding:12px 16px; font-size:15px; font-weight:600; font-family:var(--font); cursor:pointer; }
   .btn-primary { background:var(--accent); color:white; width:100%; }
   .btn-primary:active { opacity:0.8; }
+  .btn-ghost { background:var(--card2); color:var(--text); border:0.5px solid var(--border); }
+  .btn-small { padding:7px 12px; font-size:12px; }
   .tabs { display:flex; gap:6px; margin-bottom:14px; background:var(--card2); border-radius:12px; padding:4px; }
   .tab { flex:1; text-align:center; padding:9px 6px; border-radius:9px; font-size:13px; font-weight:600; color:var(--text-secondary); cursor:pointer; }
   .tab.active { background:var(--accent); color:white; }
   .view { display:none; }
   .view.active { display:block; }
-  .day-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; background:var(--accent-light); color:#8ab4f0; margin-bottom:10px; }
+  .day-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; margin-bottom:6px; }
+  .session-card { border-radius:var(--radius); padding:16px; margin-bottom:14px; border:0.5px solid var(--border); }
+  .session-card.today { border-width:2px; box-shadow:0 0 0 2px rgba(35,137,160,0.12); }
+  .session-card.muted { opacity:1; }
+  .session-label { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; margin-bottom:4px; }
   .exercise-row { border-top:0.5px solid var(--border); padding:12px 0; }
   .exercise-row:first-child { border-top:none; padding-top:0; }
-  .exercise-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+  .exercise-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; gap:8px; }
   .exercise-name { font-size:14px; font-weight:600; margin-bottom:2px; }
   .exercise-target { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
-  .svg-toggle { font-size:11px; color:var(--accent); padding:3px 8px; background:var(--accent-light); border-radius:8px; white-space:nowrap; flex-shrink:0; }
+  .copied-tag { font-size:10px; color:var(--accent-bright); margin-left:6px; font-weight:500; }
+  .svg-toggle { font-size:11px; color:var(--text); padding:4px 9px; background:var(--card2); border:0.5px solid var(--border); border-radius:8px; white-space:nowrap; flex-shrink:0; }
   .svg-panel { display:none; background:var(--card2); border-radius:10px; padding:10px; margin-bottom:10px; text-align:center; }
   .svg-panel.open { display:block; }
   .svg-panel svg { max-width:100%; height:auto; }
-  .svg-caption { font-size:11px; color:var(--text-muted); margin-top:6px; }
   .sets-grid { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; align-items:center; margin-bottom:6px; }
   .sets-grid .set-num { font-size:12px; color:var(--text-muted); text-align:center; }
   .sets-grid input { padding:8px 8px; font-size:14px; text-align:center; }
-  .check-btn { width:32px; height:32px; border-radius:50%; background:var(--card2); border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text-muted); cursor:pointer; }
+  .check-btn { width:32px; height:32px; border-radius:50%; background:var(--card2); border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text-muted); cursor:pointer; flex-shrink:0; }
   .check-btn.done { background:var(--success-light); color:var(--success); border-color:var(--success); }
   .sets-header { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; margin-bottom:6px; }
   .sets-header span { font-size:11px; color:var(--text-muted); text-align:center; }
@@ -73,19 +85,31 @@
   .nav-item.active { color:var(--accent); }
   .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--success); color:white; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; transition:all 0.25s ease; pointer-events:none; z-index:50; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:4px; }
+  .week-day { text-align:center; }
+  .week-day-label { font-size:10px; color:var(--text-muted); margin-bottom:6px; }
+  .week-day-dot { width:32px; height:32px; border-radius:9px; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; border:0.5px solid var(--border); background:var(--card2); color:var(--text-muted); }
+  .week-day-dot.done { background:var(--success-light); color:var(--success); border-color:var(--success); }
+  .week-day-dot.today-marker { border-width:2px; border-color:var(--accent-bright); }
+  .editor-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-top:0.5px solid var(--border); }
+  .editor-row:first-child { border-top:none; }
+  .editor-row select { width:auto; flex:1; margin-left:10px; }
 </style>
 </head>
 <body>
 <div class="header">
-  <h1>Mi progreso</h1>
+  <h1 id="appTitle">Carvajal</h1>
   <div class="sub" id="dateLabel"></div>
 </div>
 <div class="container">
   <div class="tabs">
     <div class="tab active" data-view="rutina">Rutina</div>
     <div class="tab" data-view="peso">Peso</div>
-    <div class="tab" data-view="historial">Historial</div>
+    <div class="tab" data-view="progreso">Progreso</div>
+    <div class="tab" data-view="biblioteca">Ejercicios</div>
+    <div class="tab" data-view="editar">Editar</div>
   </div>
+
   <div class="view active" id="view-rutina">
     <div class="card">
       <div class="card-title">¿Qué día entrenas hoy?</div>
@@ -93,6 +117,7 @@
     </div>
     <div id="routineContent"></div>
   </div>
+
   <div class="view" id="view-peso">
     <div class="card">
       <div class="card-title">Registrar peso de hoy</div>
@@ -108,7 +133,13 @@
       <canvas id="weightChart"></canvas>
     </div>
   </div>
-  <div class="view" id="view-historial">
+
+  <div class="view" id="view-progreso">
+    <div class="card">
+      <div class="card-title">Esta semana</div>
+      <div class="week-grid" id="weekGrid"></div>
+      <div class="empty-state" id="weekEmpty" style="display:none;">Sin entrenamientos esta semana aún.</div>
+    </div>
     <div class="card">
       <div class="card-title">Historial de pesos corporales</div>
       <div id="weightHistory"></div>
@@ -118,16 +149,69 @@
       <div id="workoutHistory"></div>
     </div>
   </div>
+
+  <div class="view" id="view-biblioteca">
+    <div class="card" id="bibliotecaNav">
+      <div class="card-title">Biblioteca de ejercicios</div>
+      <div id="bibliotecaGrupos"></div>
+    </div>
+    <div id="bibliotecaDetalle"></div>
+  </div>
+
+  <div class="view" id="view-editar">
+    <div class="card">
+      <div class="card-title">Personalizar app</div>
+      <div class="row">
+        <input type="text" id="nameInput" placeholder="Tu nombre (ej. Fabián)">
+      </div>
+      <button class="btn-primary" id="saveNameBtn">Guardar nombre</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Agregar ejercicio nuevo</div>
+      <div class="row">
+        <select id="newExGrupo">
+          <option value="piernas">Piernas</option>
+          <option value="pecho">Pecho</option>
+          <option value="triceps">Tríceps</option>
+          <option value="hombros">Hombros</option>
+          <option value="espalda">Espalda</option>
+          <option value="biceps">Bíceps</option>
+          <option value="core">Core</option>
+        </select>
+        <select id="newExEquipo">
+          <option value="Barra">Barra</option>
+          <option value="Mancuernas">Mancuernas</option>
+          <option value="Máquina">Máquina</option>
+          <option value="Polea / cable">Polea / cable</option>
+          <option value="Peso corporal">Peso corporal</option>
+        </select>
+      </div>
+      <div class="row">
+        <input type="text" id="newExNombre" placeholder="Nombre del ejercicio">
+      </div>
+      <div class="row">
+        <input type="text" id="newExMusculo" placeholder="Músculo específico (ej. Pecho superior)">
+      </div>
+      <button class="btn-primary" id="addExBtn">Agregar a la lista</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Editar ejercicios por día <span class="label">elige otro de la lista</span></div>
+      <select id="editDaySelect" style="margin-bottom:12px;"></select>
+      <div id="editorContent"></div>
+    </div>
+  </div>
 </div>
 <div class="bottom-nav">
   <div class="nav-item active" data-view="rutina"><span class="nav-icon">&#127947;</span>Rutina</div>
   <div class="nav-item" data-view="peso"><span class="nav-icon">&#9878;</span>Peso</div>
-  <div class="nav-item" data-view="historial"><span class="nav-icon">&#128202;</span>Historial</div>
+  <div class="nav-item" data-view="progreso"><span class="nav-icon">&#128202;</span>Progreso</div>
+  <div class="nav-item" data-view="biblioteca"><span class="nav-icon">&#128218;</span>Ejerc.</div>
+  <div class="nav-item" data-view="editar"><span class="nav-icon">&#9881;</span>Editar</div>
 </div>
 <div class="toast" id="toast">Guardado</div>
 
 <script>
-// ===== SVG ILUSTRACIONES =====
+// ===== SVGS (igual que antes, abreviado aquí por espacio - se mantienen todos) =====
 const SVGS = {
   "Sentadilla con barra": `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
     <rect x="30" y="8" width="60" height="4" rx="2" fill="#3478e0"/>
@@ -502,51 +586,279 @@ const SVGS = {
   </svg>`
 };
 
-// ===== RUTINA =====
-const RUTINA = {
-  lunes: { nombre:"Lunes — Piernas (tarde) + Trote (mañana)", grupo:"Piernas", cardio:"Trote 3 millas en la mañana, ritmo 7-7.5", ejercicios:[
-    {nombre:"Sentadilla con barra", target:"4 series x 8-10 reps", sets:4},
-    {nombre:"Prensa de piernas", target:"3 series x 10-12 reps", sets:3},
-    {nombre:"Peso muerto rumano", target:"3 series x 8-10 reps", sets:3},
-    {nombre:"Extensión de cuádriceps", target:"3 series x 12 reps", sets:3},
-    {nombre:"Curl femoral", target:"3 series x 12 reps", sets:3},
-    {nombre:"Elevación de talones", target:"4 series x 15 reps", sets:4}
-  ]},
-  martes: { nombre:"Martes — Pecho y tríceps (madrugada)", grupo:"Pecho / Tríceps", cardio:null, ejercicios:[
-    {nombre:"Press banca (barra o mancuernas)", target:"4 series x 8-10 reps", sets:4},
-    {nombre:"Press inclinado mancuernas", target:"3 series x 10 reps", sets:3},
-    {nombre:"Aperturas banca o cable", target:"3 series x 12 reps", sets:3},
-    {nombre:"Fondos o press francés", target:"3 series x 10 reps", sets:3},
-    {nombre:"Extensión tríceps en polea", target:"3 series x 12 reps", sets:3}
-  ]},
-  miercoles: { nombre:"Miércoles — Hombros y core (tarde) + Trote (mañana)", grupo:"Hombros / Core", cardio:"Trote 3 millas en la mañana, ritmo 7-7.5", ejercicios:[
-    {nombre:"Press militar mancuernas", target:"4 series x 8-10 reps", sets:4},
-    {nombre:"Elevaciones laterales", target:"3 series x 12-15 reps", sets:3},
-    {nombre:"Elevaciones frontales", target:"2 series x 12 reps", sets:2},
-    {nombre:"Pájaros (deltoide posterior)", target:"3 series x 12 reps", sets:3},
-    {nombre:"Plancha", target:"3 series x 30-45 seg", sets:3},
-    {nombre:"Elevación de piernas", target:"3 series x 12-15 reps", sets:3}
-  ]},
-  jueves: { nombre:"Jueves — Espalda y bíceps (madrugada)", grupo:"Espalda / Bíceps", cardio:null, ejercicios:[
-    {nombre:"Dominadas o jalón en polea", target:"4 series x 8-10 reps", sets:4},
-    {nombre:"Remo con barra o mancuerna", target:"3 series x 10 reps", sets:3},
-    {nombre:"Remo en polea baja", target:"3 series x 12 reps", sets:3},
-    {nombre:"Curl de bíceps con barra", target:"3 series x 10 reps", sets:3},
-    {nombre:"Curl martillo", target:"3 series x 12 reps", sets:3}
-  ]},
-  viernes: { nombre:"Viernes — Trote (mañana)", grupo:"Cardio", cardio:"Trote 3 millas, ritmo 7-7.5", ejercicios:[] },
-  sabado: { nombre:"Sábado — Trote largo (mañana)", grupo:"Cardio largo", cardio:"Trote largo 5 millas, ritmo variable 7-9", ejercicios:[] },
-  domingo: { nombre:"Domingo — Descanso", grupo:"Descanso", cardio:"Descanso total o caminata ligera", ejercicios:[] }
+// ===== BANCO DE EJERCICIOS POR GRUPO =====
+const MUSCULOS_POR_GRUPO = {
+  piernas: ["Cuádriceps", "Isquiotibiales", "Glúteos", "Pantorrillas"],
+  pecho: ["Pecho superior", "Pecho medio", "Pecho inferior"],
+  triceps: ["Tríceps"],
+  hombros: ["Deltoide frontal", "Deltoide medio", "Deltoide posterior", "Trapecio"],
+  espalda: ["Dorsal ancho", "Espalda media", "Espalda baja"],
+  biceps: ["Bíceps"],
+  core: ["Abdomen superior", "Abdomen inferior", "Oblicuos"]
 };
+
+const BANCO_EJERCICIOS = {
+  piernas: [
+    {nombre:"Sentadilla con barra", en:"Barbell Squat", target:"4 series x 8-10 reps", sets:4, equipo:"Barra", musculo:"Cuádriceps"},
+    {nombre:"Sentadilla frontal", en:"Front Squat", target:"3 series x 8-10 reps", sets:3, equipo:"Barra", musculo:"Cuádriceps"},
+    {nombre:"Sentadilla hack", en:"Hack Squat", target:"3 series x 10 reps", sets:3, equipo:"Máquina", musculo:"Cuádriceps"},
+    {nombre:"Sentadilla goblet", en:"Goblet Squat", target:"3 series x 10-12 reps", sets:3, equipo:"Mancuernas", musculo:"Cuádriceps"},
+    {nombre:"Prensa de piernas (pies juntos)", en:"Leg Press (feet together)", target:"3 series x 10-12 reps", sets:3, equipo:"Máquina", musculo:"Cuádriceps"},
+    {nombre:"Extensión de cuádriceps", en:"Leg Extension", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Cuádriceps"},
+    {nombre:"Zancadas con mancuernas", en:"Dumbbell Lunges", target:"3 series x 10 reps por pierna", sets:3, equipo:"Mancuernas", musculo:"Cuádriceps"},
+    {nombre:"Sentadilla búlgara", en:"Bulgarian Split Squat", target:"3 series x 10 reps por pierna", sets:3, equipo:"Mancuernas", musculo:"Cuádriceps"},
+    {nombre:"Prensa de piernas (pies separados)", en:"Leg Press (wide stance)", target:"3 series x 10-12 reps", sets:3, equipo:"Máquina", musculo:"Glúteos"},
+    {nombre:"Sentadilla sumo", en:"Sumo Squat", target:"3 series x 10-12 reps", sets:3, equipo:"Mancuernas", musculo:"Glúteos"},
+    {nombre:"Patada de glúteo en polea", en:"Cable Glute Kickback", target:"3 series x 12-15 reps por lado", sets:3, equipo:"Polea / cable", musculo:"Glúteos"},
+    {nombre:"Patada de glúteo en máquina", en:"Glute Kickback Machine", target:"3 series x 12-15 reps por lado", sets:3, equipo:"Máquina", musculo:"Glúteos"},
+    {nombre:"Hip thrust con barra", en:"Barbell Hip Thrust", target:"3 series x 10-12 reps", sets:3, equipo:"Barra", musculo:"Glúteos"},
+    {nombre:"Hip thrust en máquina", en:"Hip Thrust Machine", target:"3 series x 10-12 reps", sets:3, equipo:"Máquina", musculo:"Glúteos"},
+    {nombre:"Abductor en máquina", en:"Hip Abductor Machine", target:"3 series x 15 reps", sets:3, equipo:"Máquina", musculo:"Glúteos"},
+    {nombre:"Aductor en máquina", en:"Hip Adductor Machine", target:"3 series x 15 reps", sets:3, equipo:"Máquina", musculo:"Glúteos"},
+    {nombre:"Peso muerto convencional", en:"Conventional Deadlift", target:"3 series x 8 reps", sets:3, equipo:"Barra", musculo:"Isquiotibiales"},
+    {nombre:"Peso muerto rumano con barra", en:"Romanian Deadlift (barbell)", target:"3 series x 8-10 reps", sets:3, equipo:"Barra", musculo:"Isquiotibiales"},
+    {nombre:"Peso muerto rumano con mancuernas", en:"Romanian Deadlift (dumbbells)", target:"3 series x 8-10 reps", sets:3, equipo:"Mancuernas", musculo:"Isquiotibiales"},
+    {nombre:"Curl femoral acostado", en:"Lying Leg Curl", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Isquiotibiales"},
+    {nombre:"Curl femoral sentado", en:"Seated Leg Curl", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Isquiotibiales"},
+    {nombre:"Elevación de talones de pie en máquina", en:"Standing Calf Raise Machine", target:"4 series x 15 reps", sets:4, equipo:"Máquina", musculo:"Pantorrillas"},
+    {nombre:"Elevación de talones sentado", en:"Seated Calf Raise", target:"4 series x 15 reps", sets:4, equipo:"Máquina", musculo:"Pantorrillas"},
+    {nombre:"Elevación de talones en prensa", en:"Leg Press Calf Raise", target:"4 series x 15 reps", sets:4, equipo:"Máquina", musculo:"Pantorrillas"},
+    {nombre:"Elevación de talones de pie (sin máquina)", en:"Standing Calf Raise (bodyweight)", target:"4 series x 15-20 reps", sets:4, equipo:"Peso corporal", musculo:"Pantorrillas"}
+  ],
+  pecho: [
+    {nombre:"Press banca inclinado con barra", en:"Incline Barbell Bench Press", target:"3 series x 8-10 reps", sets:3, equipo:"Barra", musculo:"Pecho superior"},
+    {nombre:"Press banca inclinado con mancuernas", en:"Incline Dumbbell Bench Press", target:"3 series x 10 reps", sets:3, equipo:"Mancuernas", musculo:"Pecho superior"},
+    {nombre:"Press inclinado en máquina", en:"Incline Chest Press Machine", target:"3 series x 10 reps", sets:3, equipo:"Máquina", musculo:"Pecho superior"},
+    {nombre:"Aperturas en banco inclinado con mancuernas", en:"Incline Dumbbell Flyes", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Pecho superior"},
+    {nombre:"Cruces en polea baja a alta", en:"Low Cable Crossover (low to high)", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Pecho superior"},
+    {nombre:"Flexiones declinadas (pies elevados)", en:"Decline Push-Ups", target:"3 series x 12 reps", sets:3, equipo:"Peso corporal", musculo:"Pecho superior"},
+    {nombre:"Press banca plano con barra", en:"Flat Barbell Bench Press", target:"4 series x 8-10 reps", sets:4, equipo:"Barra", musculo:"Pecho medio"},
+    {nombre:"Press banca plano con mancuernas", en:"Flat Dumbbell Bench Press", target:"4 series x 8-10 reps", sets:4, equipo:"Mancuernas", musculo:"Pecho medio"},
+    {nombre:"Press de pecho en máquina (Chest Press)", en:"Chest Press Machine", target:"3 series x 10-12 reps", sets:3, equipo:"Máquina", musculo:"Pecho medio"},
+    {nombre:"Aperturas en banco plano con mancuernas", en:"Flat Dumbbell Flyes", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Pecho medio"},
+    {nombre:"Aperturas en máquina (pec-deck)", en:"Pec-Deck / Seated Machine Flyes", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Pecho medio"},
+    {nombre:"Cruces en polea a la altura del pecho", en:"Mid Cable Crossover", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Pecho medio"},
+    {nombre:"Flexiones de pecho (push-ups)", en:"Push-Ups", target:"3 series x 12-15 reps", sets:3, equipo:"Peso corporal", musculo:"Pecho medio"},
+    {nombre:"Press banca declinado con barra", en:"Decline Barbell Bench Press", target:"3 series x 8-10 reps", sets:3, equipo:"Barra", musculo:"Pecho inferior"},
+    {nombre:"Press banca declinado con mancuernas", en:"Decline Dumbbell Bench Press", target:"3 series x 10 reps", sets:3, equipo:"Mancuernas", musculo:"Pecho inferior"},
+    {nombre:"Press declinado en máquina", en:"Decline Chest Press Machine", target:"3 series x 10 reps", sets:3, equipo:"Máquina", musculo:"Pecho inferior"},
+    {nombre:"Aperturas declinadas con mancuernas", en:"Decline Dumbbell Flyes", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Pecho inferior"},
+    {nombre:"Cruces en polea alta a baja", en:"Cable Crossover (high to low)", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Pecho inferior"},
+    {nombre:"Fondos en paralelas (chest dips)", en:"Chest Dips", target:"3 series x 10 reps", sets:3, equipo:"Peso corporal", musculo:"Pecho inferior"},
+    {nombre:"Pull-over con mancuerna", en:"Dumbbell Pullover", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Pecho inferior"}
+  ],
+  triceps: [
+    {nombre:"Extensión de tríceps en polea (barra recta)", en:"Triceps Pushdown (straight bar)", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Tríceps"},
+    {nombre:"Extensión de tríceps en polea (cuerda)", en:"Triceps Rope Pushdown", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Tríceps"},
+    {nombre:"Extensión sobre la cabeza en polea", en:"Overhead Cable Triceps Extension", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Tríceps"},
+    {nombre:"Press francés con barra", en:"Barbell Skull Crusher", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Tríceps"},
+    {nombre:"Press francés con mancuerna", en:"Dumbbell Skull Crusher", target:"3 series x 10 reps", sets:3, equipo:"Mancuernas", musculo:"Tríceps"},
+    {nombre:"Extensión de tríceps sobre la cabeza con mancuerna", en:"Overhead Dumbbell Triceps Extension", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Tríceps"},
+    {nombre:"Press de tríceps en máquina", en:"Triceps Press Machine", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Tríceps"},
+    {nombre:"Fondos en banco (bench dips)", en:"Bench Dips", target:"3 series x 12 reps", sets:3, equipo:"Peso corporal", musculo:"Tríceps"},
+    {nombre:"Fondos en paralelas (tríceps)", en:"Triceps Dips", target:"3 series x 10 reps", sets:3, equipo:"Peso corporal", musculo:"Tríceps"},
+    {nombre:"Patada de tríceps con mancuerna", en:"Dumbbell Triceps Kickback", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Tríceps"},
+    {nombre:"Press cerrado con barra", en:"Close-Grip Bench Press", target:"3 series x 8-10 reps", sets:3, equipo:"Barra", musculo:"Tríceps"}
+  ],
+  hombros: [
+    {nombre:"Press militar con barra de pie", en:"Standing Barbell Overhead Press", target:"4 series x 8-10 reps", sets:4, equipo:"Barra", musculo:"Deltoide frontal"},
+    {nombre:"Press militar con barra sentado", en:"Seated Barbell Overhead Press", target:"4 series x 8-10 reps", sets:4, equipo:"Barra", musculo:"Deltoide frontal"},
+    {nombre:"Press militar con mancuernas", en:"Dumbbell Shoulder Press", target:"4 series x 8-10 reps", sets:4, equipo:"Mancuernas", musculo:"Deltoide frontal"},
+    {nombre:"Press de hombro en máquina", en:"Shoulder Press Machine", target:"3 series x 10 reps", sets:3, equipo:"Máquina", musculo:"Deltoide frontal"},
+    {nombre:"Press Arnold", en:"Arnold Press", target:"3 series x 10 reps", sets:3, equipo:"Mancuernas", musculo:"Deltoide frontal"},
+    {nombre:"Elevaciones frontales con mancuernas", en:"Dumbbell Front Raise", target:"2 series x 12 reps", sets:2, equipo:"Mancuernas", musculo:"Deltoide frontal"},
+    {nombre:"Elevaciones frontales en polea", en:"Cable Front Raise", target:"2 series x 12 reps", sets:2, equipo:"Polea / cable", musculo:"Deltoide frontal"},
+    {nombre:"Elevaciones laterales con mancuernas", en:"Dumbbell Lateral Raise", target:"3 series x 12-15 reps", sets:3, equipo:"Mancuernas", musculo:"Deltoide medio"},
+    {nombre:"Elevaciones laterales en polea", en:"Cable Lateral Raise", target:"3 series x 12-15 reps", sets:3, equipo:"Polea / cable", musculo:"Deltoide medio"},
+    {nombre:"Elevaciones laterales en máquina", en:"Lateral Raise Machine", target:"3 series x 12-15 reps", sets:3, equipo:"Máquina", musculo:"Deltoide medio"},
+    {nombre:"Pájaros con mancuernas (deltoide posterior)", en:"Dumbbell Rear Delt Fly", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Deltoide posterior"},
+    {nombre:"Pájaros en máquina (pec-deck inverso)", en:"Reverse Pec-Deck", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Deltoide posterior"},
+    {nombre:"Pájaros en polea", en:"Cable Rear Delt Fly", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Deltoide posterior"},
+    {nombre:"Face pull en polea", en:"Cable Face Pull", target:"3 series x 12-15 reps", sets:3, equipo:"Polea / cable", musculo:"Deltoide posterior"},
+    {nombre:"Encogimientos con mancuernas", en:"Dumbbell Shrugs", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Trapecio"},
+    {nombre:"Encogimientos con barra", en:"Barbell Shrugs", target:"3 series x 12 reps", sets:3, equipo:"Barra", musculo:"Trapecio"}
+  ],
+  core: [
+    {nombre:"Crunch abdominal", en:"Abdominal Crunch", target:"3 series x 15 reps", sets:3, equipo:"Peso corporal", musculo:"Abdomen superior"},
+    {nombre:"Crunch en máquina", en:"Ab Crunch Machine", target:"3 series x 15 reps", sets:3, equipo:"Máquina", musculo:"Abdomen superior"},
+    {nombre:"Crunch en polea (cable crunch)", en:"Cable Crunch", target:"3 series x 15 reps", sets:3, equipo:"Polea / cable", musculo:"Abdomen superior"},
+    {nombre:"Plancha", en:"Plank", target:"3 series x 30-45 seg", sets:3, equipo:"Peso corporal", musculo:"Abdomen superior"},
+    {nombre:"Elevación de piernas colgado", en:"Hanging Leg Raise", target:"3 series x 12-15 reps", sets:3, equipo:"Peso corporal", musculo:"Abdomen inferior"},
+    {nombre:"Elevación de rodillas colgado", en:"Hanging Knee Raise", target:"3 series x 12-15 reps", sets:3, equipo:"Peso corporal", musculo:"Abdomen inferior"},
+    {nombre:"Elevación de piernas en máquina", en:"Captain's Chair Leg Raise", target:"3 series x 12-15 reps", sets:3, equipo:"Máquina", musculo:"Abdomen inferior"},
+    {nombre:"Rueda abdominal", en:"Ab Wheel Rollout", target:"3 series x 10 reps", sets:3, equipo:"Peso corporal", musculo:"Abdomen inferior"},
+    {nombre:"Plancha lateral", en:"Side Plank", target:"3 series x 30 seg por lado", sets:3, equipo:"Peso corporal", musculo:"Oblicuos"},
+    {nombre:"Giro ruso (Russian twist)", en:"Russian Twist", target:"3 series x 15 reps por lado", sets:3, equipo:"Peso corporal", musculo:"Oblicuos"}
+  ],
+  espalda: [
+    {nombre:"Dominadas (agarre ancho)", en:"Wide-Grip Pull-Up", target:"4 series x 8-10 reps", sets:4, equipo:"Peso corporal", musculo:"Dorsal ancho"},
+    {nombre:"Dominadas (agarre supino / chin-up)", en:"Chin-Up", target:"4 series x 8-10 reps", sets:4, equipo:"Peso corporal", musculo:"Dorsal ancho"},
+    {nombre:"Jalón al pecho en polea (agarre ancho)", en:"Wide-Grip Lat Pulldown", target:"4 series x 8-10 reps", sets:4, equipo:"Polea / cable", musculo:"Dorsal ancho"},
+    {nombre:"Jalón al pecho en polea (agarre cerrado)", en:"Close-Grip Lat Pulldown", target:"3 series x 10 reps", sets:3, equipo:"Polea / cable", musculo:"Dorsal ancho"},
+    {nombre:"Pull-over con mancuerna", en:"Dumbbell Pullover", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Dorsal ancho"},
+    {nombre:"Remo con barra", en:"Barbell Row", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Espalda media"},
+    {nombre:"Remo con mancuerna a una mano", en:"One-Arm Dumbbell Row", target:"3 series x 10 reps por lado", sets:3, equipo:"Mancuernas", musculo:"Espalda media"},
+    {nombre:"Remo en polea baja (agarre estrecho)", en:"Seated Cable Row (close grip)", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Espalda media"},
+    {nombre:"Remo en máquina", en:"Row Machine", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Espalda media"},
+    {nombre:"Remo en T (T-bar row)", en:"T-Bar Row", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Espalda media"},
+    {nombre:"Peso muerto convencional", en:"Conventional Deadlift", target:"3 series x 8 reps", sets:3, equipo:"Barra", musculo:"Espalda baja"},
+    {nombre:"Hiperextensiones (lumbares)", en:"Back Extension", target:"3 series x 12-15 reps", sets:3, equipo:"Peso corporal", musculo:"Espalda baja"}
+  ],
+  biceps: [
+    {nombre:"Curl de bíceps con barra recta", en:"Barbell Curl", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Bíceps"},
+    {nombre:"Curl de bíceps con barra Z", en:"EZ-Bar Curl", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Bíceps"},
+    {nombre:"Curl con mancuernas alternado", en:"Alternating Dumbbell Curl", target:"3 series x 10 reps por lado", sets:3, equipo:"Mancuernas", musculo:"Bíceps"},
+    {nombre:"Curl martillo", en:"Hammer Curl", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Bíceps"},
+    {nombre:"Curl concentrado", en:"Concentration Curl", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Bíceps"},
+    {nombre:"Curl en banco scott con barra", en:"Barbell Preacher Curl", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Bíceps"},
+    {nombre:"Curl en banco scott con mancuerna", en:"Dumbbell Preacher Curl", target:"3 series x 10 reps", sets:3, equipo:"Mancuernas", musculo:"Bíceps"},
+    {nombre:"Curl en polea baja", en:"Cable Curl (low pulley)", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Bíceps"},
+    {nombre:"Curl en máquina", en:"Bicep Curl Machine", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Bíceps"},
+    {nombre:"Curl 21s", en:"21s Bicep Curl", target:"3 series x 21 reps", sets:3, equipo:"Barra", musculo:"Bíceps"}
+  ]
+};
+
+// ===== COLORES POR GRUPO =====
+const GRUPO_COLOR = {
+  piernas: {c:'var(--g-piernas)', bg:'var(--g-piernas-bg)'},
+  pecho: {c:'var(--g-pecho)', bg:'var(--g-pecho-bg)'},
+  triceps: {c:'var(--g-pecho)', bg:'var(--g-pecho-bg)'},
+  hombros: {c:'var(--g-hombros)', bg:'var(--g-hombros-bg)'},
+  core: {c:'var(--g-hombros)', bg:'var(--g-hombros-bg)'},
+  espalda: {c:'var(--g-espalda)', bg:'var(--g-espalda-bg)'},
+  biceps: {c:'var(--g-espalda)', bg:'var(--g-espalda-bg)'},
+  cardio: {c:'var(--g-cardio)', bg:'var(--g-cardio-bg)'},
+  descanso: {c:'var(--g-descanso)', bg:'var(--g-descanso-bg)'}
+};
+
+// ===== RUTINA POR DEFECTO (referencia a banco por nombre+grupo) =====
+function defaultRutina() {
+  return {
+    lunes: { grupoPrincipal:"piernas",
+      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
+      tarde: { tipo:"pesas", titulo:"Piernas", grupo:"piernas", ejercicios:["Sentadilla con barra","Prensa de piernas (pies juntos)","Peso muerto rumano con barra","Extensión de cuádriceps","Curl femoral acostado","Elevación de talones de pie en máquina"] }
+    },
+    martes: { grupoPrincipal:"pecho",
+      manana: { tipo:"pesas", titulo:"Pecho y tríceps", grupo:"pecho", ejercicios:["Press banca plano con barra","Press banca inclinado con mancuernas","Aperturas en banco plano con mancuernas","Fondos en paralelas (chest dips)","Extensión de tríceps en polea (barra recta)"] },
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    miercoles: { grupoPrincipal:"hombros",
+      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
+      tarde: { tipo:"pesas", titulo:"Hombros y core", grupo:"hombros", ejercicios:["Press militar con mancuernas","Elevaciones laterales con mancuernas","Elevaciones frontales con mancuernas","Pájaros con mancuernas (deltoide posterior)","Plancha","Elevación de piernas colgado"] }
+    },
+    jueves: { grupoPrincipal:"espalda",
+      manana: { tipo:"pesas", titulo:"Espalda y bíceps", grupo:"espalda", ejercicios:["Dominadas (agarre ancho)","Remo con barra","Remo en polea baja (agarre estrecho)","Curl de bíceps con barra recta","Curl martillo"] },
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    viernes: { grupoPrincipal:"cardio",
+      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    sabado: { grupoPrincipal:"cardio",
+      manana: { tipo:"cardio", titulo:"Trote largo", detalle:"5 millas, ritmo variable 7-9" },
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    domingo: { grupoPrincipal:"descanso",
+      manana: { tipo:"descanso", titulo:"Descanso" },
+      tarde: { tipo:"descanso", titulo:"Descanso" }
+    }
+  };
+}
 
 const DIAS_ORDEN = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"];
 const DIAS_LABEL = {lunes:"Lunes",martes:"Martes",miercoles:"Miércoles",jueves:"Jueves",viernes:"Viernes",sabado:"Sábado",domingo:"Domingo"};
 
 // ===== STORAGE =====
-const STORAGE_KEY = "gymTrackerData_v2";
-function loadData() { try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e){} return {weights:[],workouts:[]}; }
-function saveData(d) { localStorage.setItem(STORAGE_KEY,JSON.stringify(d)); }
+const STORAGE_KEY = "carvajalGymData_v1";
+function loadData() {
+  try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e){}
+  return { weights:[], workouts:[], rutina:defaultRutina(), nombre:"", customEjercicios:{} };
+}
+function saveData(d) {
+  // Nunca guardar imágenes en localStorage — van a IndexedDB
+  const clean = Object.assign({}, d);
+  delete clean.exerciseImages;
+  delete clean.groupImages;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clean)); } catch(e) { console.error('Error guardando datos:', e); }
+}
 let DATA = loadData();
+if(!DATA.rutina) DATA.rutina = defaultRutina();
+if(DATA.nombre === undefined) DATA.nombre = "";
+if(!DATA.customEjercicios) DATA.customEjercicios = {};
+DATA.exerciseImages = {};
+DATA.groupImages = {};
+
+// ===== INDEXEDDB PARA IMÁGENES =====
+const IDB_NAME = "CarvajalGymImages";
+const IDB_VERSION = 1;
+let idb = null;
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    if(idb) { resolve(idb); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('ejercicios')) db.createObjectStore('ejercicios');
+      if(!db.objectStoreNames.contains('grupos')) db.createObjectStore('grupos');
+    };
+    req.onsuccess = (e) => { idb = e.target.result; resolve(idb); };
+    req.onerror = (e) => reject(e);
+  });
+}
+
+function idbSave(store, key, value) {
+  return openIDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
+  }));
+}
+
+function idbGet(store, key) {
+  return openIDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = (e) => reject(e);
+  }));
+}
+
+function idbGetAll(store) {
+  return openIDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const results = {};
+    const cursor = tx.objectStore(store).openCursor();
+    cursor.onsuccess = (e) => {
+      const c = e.target.result;
+      if(c) { results[c.key] = c.value; c.continue(); }
+      else resolve(results);
+    };
+    cursor.onerror = (e) => reject(e);
+  }));
+}
+
+async function loadAllImages() {
+  try {
+    DATA.exerciseImages = await idbGetAll('ejercicios');
+    DATA.groupImages = await idbGetAll('grupos');
+  } catch(e) {
+    console.error('Error cargando imágenes:', e);
+    DATA.exerciseImages = {};
+    DATA.groupImages = {};
+  }
+}
+
+async function saveExerciseImage(nombre, dataUrl) {
+  await idbSave('ejercicios', nombre, dataUrl);
+  DATA.exerciseImages[nombre] = dataUrl;
+}
+
+async function saveGroupImage(grupo, dataUrl) {
+  await idbSave('grupos', grupo, dataUrl);
+  DATA.groupImages[grupo] = dataUrl;
+}
 
 // ===== HELPERS =====
 const LB_PER_KG = 2.20462;
@@ -554,6 +866,192 @@ function todayStr() { return new Date().toISOString().split('T')[0]; }
 function formatDate(s) { const d=new Date(s+'T00:00:00'); const m=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]; return `${d.getDate()} ${m[d.getMonth()]}`; }
 function todayDayKey() { const m=["domingo","lunes","martes","miercoles","jueves","viernes","sabado"]; return m[new Date().getDay()]; }
 function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+function findEjercicioDef(nombre) {
+  for(const g in BANCO_EJERCICIOS) {
+    const found = BANCO_EJERCICIOS[g].find(e=>e.nombre===nombre);
+    if(found) return found;
+  }
+  for(const g in DATA.customEjercicios) {
+    const found = DATA.customEjercicios[g].find(e=>e.nombre===nombre);
+    if(found) return found;
+  }
+  return {nombre, target:"3 series x 10 reps", sets:3};
+}
+function getGrupoEjercicios(grupo) {
+  const base = BANCO_EJERCICIOS[grupo] || [];
+  const custom = DATA.customEjercicios[grupo] || [];
+  return base.concat(custom);
+}
+
+// Mapeo de nombres de archivo → nombres en el banco
+const IMG_ALIASES = {
+  "Sentadilla con Barra.gif": "Sentadilla con barra",
+  "Sentadilla Frontal Con Barra.jpg": "Sentadilla frontal",
+  "Sentadilla Cerrada Inclinada en Máquina.gif": "Sentadilla hack",
+  "Sentadilla Hack.gif": "Sentadilla hack",
+  "Sentadilla goblet mancuerna.gif": "Sentadilla goblet",
+  "Sentadilla Sumo con Mancuerna.gif": "Sentadilla sumo",
+  "Sentadilla Búlgara con mancuernas.jpg": "Sentadilla búlgara",
+  "Prensa piernas pie juntos.avif": "Prensa de piernas (pies juntos)",
+  "Prensa de piernas Inclinada pies separados.gif": "Prensa de piernas (pies separados)",
+  "Extensión de Cuádriceps en Máquina.gif": "Extensión de cuádriceps",
+  "Zancada Delantera con Mancuernas.gif": "Zancadas con mancuernas",
+  "El Peso Muerto Convencional.gif": "Peso muerto convencional",
+  "Peso Muerto Rumano con Barra.gif": "Peso muerto rumano con barra",
+  "Peso Muerto Rumano con Mancuernas.gif": "Peso muerto rumano con mancuernas",
+  "Curl Femoral Horizontal en Máquina.gif": "Curl femoral acostado",
+  "Curl femoral sentado.jpg": "Curl femoral sentado",
+  "elevacion talon pie maquina.jpg": "Elevación de talones de pie en máquina",
+  "Elevación de gemelo en máquina sentado.jpg": "Elevación de talones sentado",
+  "elevacion talon prensa.jpg": "Elevación de talones en prensa",
+  "elevacion talon de pie.jpg": "Elevación de talones de pie (sin máquina)",
+  "Aductor Externo en Máquina.gif": "Abductor en máquina",
+  "Aductor Interno en Máquina.gif": "Aductor en máquina",
+  "Hip Thrust Inclinado con Barra.gif": "Hip thrust con barra",
+  "hip thrust maquina.jpeg": "Hip thrust en máquina",
+  "Patada de glúteo en poleo.jpg": "Patada de glúteo en polea",
+  "Patadas Traseras con Mancuernas.gif": "Patada de glúteo en polea",
+  "Elevaciones de piernas colgado.jpg": "Elevación de piernas colgado",
+  "Elevación de Piernas con torsión en soporte.gif": "Elevación de piernas colgado",
+  "Elevación de piernas laterales Colgado.gif": "Elevación de piernas colgado",
+  "Elevación de rodillas alternando piernas colgad (Barra fija).gif": "Elevación de rodillas colgado",
+  "Elevación vertical de piernas.jpg": "Elevación de piernas en máquina",
+  "Aperturas en banco plano con Mancuernas.gif": "Aperturas en banco plano con mancuernas",
+  "Aperturas Inclinadas con Mancuernas.gif": "Aperturas en banco inclinado con mancuernas",
+  "Aperturas Declinadas con Mancuernas.gif": "Aperturas declinadas con mancuernas",
+  "Aperturas Extendidas en Máquina.gif": "Aperturas en máquina (pec-deck)",
+  "Cruce de Poleas.gif": "Cruces en polea a la altura del pecho",
+  "pecho poleas alta abajo.gif": "Cruces en polea alta a baja",
+  "Cruce inferior de Poleas.gif": "Cruces en polea baja a alta",
+  "cruce en polea baja alta.gif": "Cruces en polea baja a alta",
+  "Pullover con Mancuerna.gif": "Pull-over con mancuerna",
+  "Flexiones de pecho.gif": "Flexiones de pecho (push-ups)",
+  "Flexiones Declinadas.gif": "Flexiones declinadas (pies elevados)",
+  "Fondos Cerrados en Paralelas.gif": "Fondos en paralelas (chest dips)",
+  "press banca con mancuernas.gif": "Press banca plano con mancuernas",
+  "Press Banca Cerrado con Barra.gif": "Press banca plano con barra",
+  "press banca declinado.gif": "Press banca declinado con barra",
+  "press decline.jpg": "Press banca declinado con barra",
+  "Press Declinado con Mancuernas.gif": "Press banca declinado con mancuernas",
+  "Press De Pecho Inclinado Banca Plana.jpg": "Press banca inclinado con barra",
+  "press inclinado mancuerna.jpg": "Press banca inclinado con mancuernas",
+  "Press Inclinado en Supinación con Mancuernas.gif": "Press banca inclinado con mancuernas",
+  "Press de Pecho en Máquina Declinado.png": "Press declinado en máquina",
+  "Brustpresse.gif": "Press de pecho en máquina",
+  "Press Frontal Cerrado en Máquina.gif": "Press sentado en máquina (seated chest press)",
+  "Extensión Vertical Neutra en Polea Alta.gif": "Extensión de tríceps en polea (barra recta)",
+  "Extensión Vertical en Pronación en Polea Alta.gif": "Extensión de tríceps en polea (cuerda)",
+  "Extensión sobre cabeza en Polea.jpg": "Extensión sobre la cabeza en polea",
+  "Press Francés con Barra.gif": "Press francés con barra",
+  "Press Francés con Mancuernas.gif": "Press francés con mancuerna",
+  "Extensión Vertical con Mancuerna.gif": "Extensión de tríceps sobre la cabeza con mancuerna",
+  "Press tricep maquina.jpg": "Press de tríceps en máquina",
+  "Extensión Trasera en Máquina.gif": "Press de tríceps en máquina",
+  "Fondos en banco.gif": "Fondos en banco (bench dips)",
+  "Press Arnold con Mancuernas.gif": "Press Arnold",
+  "Press militar con barra de pie.jpg": "Press militar con barra de pie",
+  "Press Militar Neutro con Mancuernas.gif": "Press militar con mancuernas",
+  "Press de hombro sentado.jpg": "Press de hombro en máquina",
+  "Press Militar en Pronación en Máquina.gif": "Press de hombro en máquina",
+  "Press Militar Inclinado Neutro en Máquina.gif": "Press militar con mancuernas",
+  "Elevaciones Frontales en Pronación con Mancuernas.gif": "Elevaciones frontales con mancuernas",
+  "Elevacion frontal en polea.jpg": "Elevaciones frontales en polea",
+  "Elevaciones Laterales Neutras con Mancuernas.gif": "Elevaciones laterales con mancuernas",
+  "Elevación Lateral Aislada en Polea.gif": "Elevaciones laterales en polea",
+  "Elevaciones Laterales en Máquina.gif": "Elevaciones laterales en máquina",
+  "Pájaros sentado con Mancuernas.gif": "Pájaros con mancuernas (deltoide posterior)",
+  "pajaro en maquina.gif": "Pájaros en máquina (pec-deck inverso)",
+  "Pájaros Aislados en Polea.gif": "Pájaros en polea",
+  "face pull en polea.jpg": "Face pull en polea",
+  "Encogimientos con barra.jpg": "Encogimientos con barra",
+  "Encogimientos con Mancuernas.gif": "Encogimientos con mancuernas",
+  "dominadas con agarre ancho.jpg": "Dominadas (agarre ancho)",
+  "dominada supina.jpg": "Dominadas (agarre supino / chin-up)",
+  "Jalon al pecho en polea.gif": "Jalón al pecho en polea (agarre ancho)",
+  "Jalones agarre cerrado.jpg": "Jalón al pecho en polea (agarre cerrado)",
+  "Remo con barra recta.jpg": "Remo con barra",
+  "REMO MANCUERNA UNA MANO.gif": "Remo con mancuerna a una mano",
+  "Remo Polea Baja.jpg": "Remo en polea baja (agarre estrecho)",
+  "Remo Horizontal en Pronación en Máquina.gif": "Remo en máquina",
+  "Remo en Barra T en Pronación.gif": "Remo en T (T-bar row)",
+  "Hiperextensiones.gif": "Hiperextensiones (lumbares)",
+  "Curl en Supinación con Barra.gif": "Curl de bíceps con barra recta",
+  "Curl en Supinación con Barra Z.gif": "Curl de bíceps con barra Z",
+  "CURL MANCUERNAS ALTERNADO.gif": "Curl con mancuernas alternado",
+  "Curl en Martillo Alterno con Mancuernas.gif": "Curl martillo",
+  "Curl Concentrado en Supinación con Mancuerna.gif": "Curl concentrado",
+  "Curl en Supinación en banco Scott con Barra.gif": "Curl en banco scott con barra",
+  "Inclinado Biceps Banco Scott Mancuerna Curl En Banco Scott Neutro Con Mancuerna.gif": "Curl en banco scott con mancuerna",
+  "Curl en V en Polea Baja.gif": "Curl en polea baja",
+  "Curl Alterno en Supinación en Máquina.jpg": "Curl en máquina",
+  "BICEP 21S.jpg": "Curl 21s",
+  "Crunch Superior.gif": "Crunch abdominal",
+  "Crunch Machine.jpg": "Crunch en máquina",
+  "Crunch Superior de rodillas con Polea.gif": "Crunch en polea (cable crunch)",
+  "Plancha.gif": "Plancha",
+  "Elevaciones de piernas colgado.jpg": "Elevación de piernas colgado",
+  "Rueda abdominal.jpg": "Rueda abdominal",
+  "Crunch en Plancha Lateral.gif": "Plancha lateral",
+  "piernas.jpg": "piernas"
+};
+
+
+
+const IMG_BASE_URL = 'img/';
+const IMG_EXTENSIONS = ['.gif', '.jpg', '.jpeg', '.png', '.webp', '.avif'];
+
+function getImgUrl(nombreArchivo) {
+  // Devuelve la URL de la imagen en la carpeta img/
+  // El nombre del archivo ya incluye la extensión
+  return IMG_BASE_URL + nombreArchivo;
+}
+
+function findImageUrl(nombre) {
+  // Busca el nombre de archivo que corresponde al ejercicio del banco
+  // 1. Búsqueda exacta en aliases (nombre banco → nombre archivo)
+  for(const [archivo, bancNombre] of Object.entries(IMG_ALIASES)) {
+    if(bancNombre === nombre) {
+      return getImgUrl(archivo);
+    }
+  }
+  // 2. Si el nombre del banco coincide exactamente con algún archivo conocido
+  return null;
+}
+
+function findImage(nombre) {
+  // 1. Buscar en IndexedDB (imágenes subidas manualmente, tienen prioridad)
+  if(DATA.exerciseImages && DATA.exerciseImages[nombre]) return DATA.exerciseImages[nombre];
+  if(DATA.exerciseImages) {
+    for(const [archivo, bancNombre] of Object.entries(IMG_ALIASES)) {
+      if(bancNombre === nombre && DATA.exerciseImages[archivo]) {
+        return DATA.exerciseImages[archivo];
+      }
+    }
+    const nombreLower = nombre.toLowerCase();
+    for(const key of Object.keys(DATA.exerciseImages)) {
+      const keyLower = key.toLowerCase();
+      if(keyLower.includes(nombreLower) || nombreLower.includes(keyLower)) {
+        return DATA.exerciseImages[key];
+      }
+    }
+  }
+  // 2. Si no hay imagen manual, devolver URL de la carpeta img/
+  return findImageUrl(nombre);
+}
+
+// ===== NOMBRE PERSONALIZADO =====
+function applyName() {
+  const title = DATA.nombre ? DATA.nombre : "Carvajal";
+  document.getElementById('appTitle').textContent = title;
+  document.title = title;
+  document.getElementById('nameInput').value = DATA.nombre || "";
+}
+document.getElementById('saveNameBtn').addEventListener('click', () => {
+  DATA.nombre = document.getElementById('nameInput').value.trim();
+  saveData(DATA);
+  applyName();
+  showToast("Nombre guardado ✓");
+});
 
 // ===== NAV =====
 function setView(view) {
@@ -561,7 +1059,10 @@ function setView(view) {
   document.getElementById('view-'+view).classList.add('active');
   document.querySelectorAll('.tab,.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
   if(view==='peso') renderPesoView();
-  if(view==='historial') renderHistorialView();
+  if(view==='progreso') renderProgresoView();
+  if(view==='editar') renderEditorView();
+  if(view==='biblioteca') loadAllImages().then(() => renderBibliotecaGrupos());
+  if(view==='rutina') loadAllImages().then(() => renderRoutine());
 }
 document.querySelectorAll('.tab,.nav-item').forEach(el=>el.addEventListener('click',()=>setView(el.dataset.view)));
 
@@ -577,122 +1078,202 @@ const daySelect = document.getElementById('daySelect');
 DIAS_ORDEN.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=DIAS_LABEL[k]; daySelect.appendChild(o); });
 
 function getTodayWorkoutKey(dk) { return `${todayStr()}_${dk}`; }
-function getSavedSets(dk, name) { const w=DATA.workouts.find(w=>w.key===getTodayWorkoutKey(dk)); return w?w.exercises[name]||null:null; }
-function getSavedCardio(dk) { const w=DATA.workouts.find(w=>w.key===getTodayWorkoutKey(dk)); return w&&w.cardio?w.cardio:null; }
+function getSavedSession(dk, momento) {
+  const w=DATA.workouts.find(w=>w.key===getTodayWorkoutKey(dk));
+  if(!w) return null;
+  return w[momento] || null;
+}
 
-function renderRoutine() {
-  const dayKey = daySelect.value;
-  const day = RUTINA[dayKey];
-  const container = document.getElementById('routineContent');
-  let html = '';
-
-  html += `<div class="card"><span class="day-pill">${day.grupo}</span><div class="card-title" style="margin-bottom:4px;">${day.nombre}</div>`;
-  if(day.cardio) html += `<div class="exercise-target">${day.cardio}</div>`;
-  html += `</div>`;
-
-  if(day.cardio) {
-    const sc = getSavedCardio(dayKey)||{};
-    html += `<div class="card"><div class="card-title">Registrar trote de hoy <span class="label">opcional</span></div>
-      <div class="row">
-        <input type="number" inputmode="decimal" placeholder="Distancia (mi)" id="cardioDist" value="${sc.distancia||''}">
-        <input type="number" inputmode="numeric" placeholder="Calorías" id="cardioCal" value="${sc.calorias||''}">
-      </div>
-      <div class="row">
-        <input type="text" placeholder="Duración (mm:ss)" id="cardioDur" value="${sc.duracion||''}">
-        <input type="number" inputmode="decimal" placeholder="Velocidad (mph)" id="cardioVel" value="${sc.velocidad||''}">
-      </div></div>`;
+// busca el último peso usado para un ejercicio en sesiones pasadas (cualquier día)
+function getLastUsedSets(exerciseName, excludeKey) {
+  const past = DATA.workouts
+    .filter(w => w.key !== excludeKey && w.date < todayStr())
+    .sort((a,b)=> b.date.localeCompare(a.date));
+  for(const w of past) {
+    ['manana','tarde'].forEach(()=>{});
+    for(const momento of ['manana','tarde']) {
+      const sesion = w[momento];
+      if(sesion && sesion.exercises && sesion.exercises[exerciseName]) {
+        return sesion.exercises[exerciseName];
+      }
+    }
   }
+  return null;
+}
 
-  if(day.ejercicios.length > 0) {
-    html += `<div class="card">`;
-    day.ejercicios.forEach((ex, exIdx) => {
-      const saved = getSavedSets(dayKey, ex.nombre)||[];
-      const hasSvg = !!SVGS[ex.nombre];
+function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
+  const day = DATA.rutina[dayKey];
+  const sesion = day[momento];
+  if(!sesion) return '';
+
+  const grupoColor = GRUPO_COLOR[sesion.grupo] || GRUPO_COLOR.descanso;
+  const cardClass = isToday ? 'today' : 'muted';
+  let html = `<div class="session-card ${cardClass}" style="background:${grupoColor.bg}; border-color:${grupoColor.c}66;">`;
+  html += `<div class="session-label">${momentoLabel}${isToday?' · hoy':''}</div>`;
+  html += `<div class="day-pill" style="background:${grupoColor.c}33; color:${grupoColor.c};">${sesion.titulo}</div>`;
+
+  const key = getTodayWorkoutKey(dayKey);
+
+  if(sesion.tipo === 'cardio') {
+    html += `<div class="exercise-target" style="margin-bottom:10px;">${sesion.detalle}</div>`;
+    const saved = getSavedSession(dayKey, momento) || {};
+    html += `<div class="row">
+      <input type="number" inputmode="decimal" placeholder="Distancia (mi)" class="cardio-input" data-momento="${momento}" data-field="distancia" value="${saved.distancia||''}">
+      <input type="number" inputmode="numeric" placeholder="Calorías" class="cardio-input" data-momento="${momento}" data-field="calorias" value="${saved.calorias||''}">
+    </div>
+    <div class="row">
+      <input type="text" placeholder="Duración (mm:ss)" class="cardio-input" data-momento="${momento}" data-field="duracion" value="${saved.duracion||''}">
+      <input type="number" inputmode="decimal" placeholder="Velocidad (mph)" class="cardio-input" data-momento="${momento}" data-field="velocidad" value="${saved.velocidad||''}">
+    </div>`;
+    html += `<button class="btn-primary btn-small" data-save-momento="${momento}">Guardar trote</button>`;
+  } else if(sesion.tipo === 'pesas') {
+    const savedSession = getSavedSession(dayKey, momento) || {exercises:{}};
+    sesion.ejercicios.forEach((nombreEj, exIdx) => {
+      const def = findEjercicioDef(nombreEj);
+      const saved = savedSession.exercises[nombreEj];
+      let usedCopy = false;
+      let sets = saved;
+      if(!sets) {
+        const lastUsed = getLastUsedSets(nombreEj, key);
+        if(lastUsed) { sets = lastUsed.map(s=>({peso:s.peso, reps:s.reps, done:false})); usedCopy = true; }
+      }
+      if(!sets) sets = [];
+      const hasSvg = !!SVGS[nombreEj];
+      const customImg = findImage(nombreEj);
+      const hasVisual = hasSvg || customImg;
       html += `<div class="exercise-row">`;
       html += `<div class="exercise-header">
         <div>
-          <div class="exercise-name">${ex.nombre}</div>
-          <div class="exercise-target">${ex.target}</div>
+          <div class="exercise-name">${nombreEj}${usedCopy?'<span class="copied-tag">peso copiado de la última vez</span>':''}</div>
+          ${def.en ? `<div style="font-size:11px; color:var(--text-muted); font-style:italic;">${def.en}</div>` : ''}
+          <div class="exercise-target">${def.target}${def.musculo ? ' · '+def.musculo : ''}</div>
         </div>
-        ${hasSvg ? `<div class="svg-toggle" data-idx="${exIdx}">Ver</div>` : ''}
+        <div style="display:flex; gap:6px; flex-shrink:0; align-items:center;">
+          ${hasVisual ? `<div class="svg-toggle toggle-ver" data-idx="${momento}-${exIdx}">Ver</div>` : ''}
+          <label class="svg-toggle img-upload-label" style="cursor:pointer;">
+            ${customImg ? 'Cambiar' : '+ Foto'}
+            <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
+          </label>
+        </div>
       </div>`;
-      if(hasSvg) {
-        html += `<div class="svg-panel" id="svgpanel-${exIdx}">
-          ${SVGS[ex.nombre]}
-        </div>`;
+      if(hasVisual) {
+        html += `<div class="svg-panel" id="svgpanel-${momento}-${exIdx}">${customImg ? `<img src="${customImg}" style="max-width:100%; border-radius:10px;">` : SVGS[nombreEj]}</div>`;
       }
       html += `<div class="sets-header"><span>#</span><span>Peso (lb)</span><span>Reps</span><span></span></div>`;
-      for(let s=0; s<ex.sets; s++) {
-        const sd = saved[s]||{peso:'',reps:'',done:false};
+      for(let s=0; s<def.sets; s++) {
+        const sd = sets[s]||{peso:'',reps:'',done:false};
         html += `<div class="sets-grid">
           <div class="set-num">${s+1}</div>
-          <input type="number" inputmode="decimal" placeholder="lb" value="${sd.peso}" data-ex="${exIdx}" data-set="${s}" data-field="peso" class="set-input">
-          <input type="number" inputmode="numeric" placeholder="reps" value="${sd.reps}" data-ex="${exIdx}" data-set="${s}" data-field="reps" class="set-input">
-          <div class="check-btn ${sd.done?'done':''}" data-ex="${exIdx}" data-set="${s}">&#10003;</div>
+          <input type="number" inputmode="decimal" placeholder="lb" value="${sd.peso}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}" data-field="peso" class="set-input">
+          <input type="number" inputmode="numeric" placeholder="reps" value="${sd.reps}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}" data-field="reps" class="set-input">
+          <div class="check-btn ${sd.done?'done':''}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}">&#10003;</div>
         </div>`;
       }
       html += `</div>`;
     });
-    html += `</div>`;
-  } else {
-    html += `<div class="card"><div class="empty-state">Día de descanso o solo cardio.</div></div>`;
+    html += `<button class="btn-primary btn-small" data-save-momento="${momento}" style="margin-top:8px;">Guardar ${momentoLabel.toLowerCase()}</button>`;
+  } else if(sesion.tipo === 'descanso') {
+    html += `<div class="empty-state">Día de descanso.</div>`;
+  } else if(sesion.tipo === 'libre') {
+    html += `<div class="empty-state">Tarde libre — sin entrenamiento programado.</div>`;
   }
 
-  if(day.ejercicios.length > 0 || day.cardio) {
-    html += `<button class="btn-primary" id="saveWorkoutBtn">Guardar entrenamiento de hoy</button>`;
-  }
+  html += `</div>`;
+  return html;
+}
 
-  container.innerHTML = html;
+function renderRoutine() {
+  const container = document.getElementById('routineContent');
+  try {
+    const dayKey = daySelect.value;
+    const isToday = dayKey === todayDayKey();
 
-  container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('done')));
-  container.querySelectorAll('.svg-toggle').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const panel = document.getElementById('svgpanel-'+btn.dataset.idx);
-      const open = panel.classList.toggle('open');
-      btn.textContent = open ? 'Ocultar' : 'Ver';
+    let html = renderSessionBlock(dayKey, 'manana', 'Mañana', isToday);
+    html += renderSessionBlock(dayKey, 'tarde', 'Tarde', isToday);
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('done')));
+    container.querySelectorAll('.toggle-ver').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const panel = document.getElementById('svgpanel-'+btn.dataset.idx);
+        const open = panel.classList.toggle('open');
+        btn.textContent = open ? 'Ocultar' : 'Ver';
+      });
     });
-  });
+    container.querySelectorAll('.img-upload-input').forEach(inp=>{
+      inp.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const exName = inp.dataset.exName;
+          await saveExerciseImage(exName, ev.target.result);
+          showToast("Foto guardada ✓");
+          renderRoutine();
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    container.querySelectorAll('[data-save-momento]').forEach(btn=>{
+      btn.addEventListener('click', () => saveMomento(dayKey, btn.dataset.saveMomento));
+    });
+  } catch(err) {
+    container.innerHTML = `<div class="card"><div class="empty-state">Hubo un problema mostrando este día. Intenta recargar la página.<br><br><span style="font-size:10px;">${err.message}</span></div></div>`;
+    console.error('Error en renderRoutine:', err);
+  }
 }
 
-function collectCardioData() {
-  const d=document.getElementById('cardioDist');
-  const c=document.getElementById('cardioCal');
-  const dur=document.getElementById('cardioDur');
-  const v=document.getElementById('cardioVel');
-  if(!d&&!c&&!dur&&!v) return null;
-  const obj={distancia:d?d.value:'',calorias:c?c.value:'',duracion:dur?dur.value:'',velocidad:v?v.value:''};
-  if(!obj.distancia&&!obj.calorias&&!obj.duracion&&!obj.velocidad) return null;
-  return obj;
+function collectMomentoData(dayKey, momento) {
+  const day = DATA.rutina[dayKey];
+  const sesion = day[momento];
+  if(!sesion) return null;
+
+  if(sesion.tipo === 'cardio') {
+    const obj = {};
+    document.querySelectorAll(`.cardio-input[data-momento="${momento}"]`).forEach(inp=>{
+      obj[inp.dataset.field] = inp.value;
+    });
+    if(!obj.distancia && !obj.calorias && !obj.duracion && !obj.velocidad) return null;
+    return obj;
+  } else if(sesion.tipo === 'pesas') {
+    const exercises = {};
+    sesion.ejercicios.forEach((nombreEj, exIdx) => {
+      const def = findEjercicioDef(nombreEj);
+      const sets = [];
+      for(let s=0; s<def.sets; s++) {
+        const pi=document.querySelector(`.set-input[data-momento="${momento}"][data-ex="${exIdx}"][data-set="${s}"][data-field="peso"]`);
+        const ri=document.querySelector(`.set-input[data-momento="${momento}"][data-ex="${exIdx}"][data-set="${s}"][data-field="reps"]`);
+        const cb=document.querySelector(`.check-btn[data-momento="${momento}"][data-ex="${exIdx}"][data-set="${s}"]`);
+        sets.push({peso:pi?pi.value:'', reps:ri?ri.value:'', done:cb?cb.classList.contains('done'):false});
+      }
+      exercises[nombreEj] = sets;
+    });
+    return {exercises};
+  }
+  return null;
 }
 
-function collectWorkoutData(dayKey) {
-  const day=RUTINA[dayKey]; const exercises={};
-  day.ejercicios.forEach((ex,exIdx)=>{
-    const sets=[];
-    for(let s=0;s<ex.sets;s++){
-      const pi=document.querySelector(`.set-input[data-ex="${exIdx}"][data-set="${s}"][data-field="peso"]`);
-      const ri=document.querySelector(`.set-input[data-ex="${exIdx}"][data-set="${s}"][data-field="reps"]`);
-      const cb=document.querySelector(`.check-btn[data-ex="${exIdx}"][data-set="${s}"]`);
-      sets.push({peso:pi?pi.value:'',reps:ri?ri.value:'',done:cb?cb.classList.contains('done'):false});
-    }
-    exercises[ex.nombre]=sets;
-  });
-  return exercises;
+function saveMomento(dayKey, momento) {
+  const key = getTodayWorkoutKey(dayKey);
+  const data = collectMomentoData(dayKey, momento);
+  let w = DATA.workouts.find(w=>w.key===key);
+  if(!w) { w = {key, date:todayStr(), dayKey, manana:null, tarde:null}; DATA.workouts.push(w); }
+  w[momento] = data;
+  w.date = todayStr();
+  saveData(DATA);
+  showToast("Guardado ✓");
 }
 
-function saveWorkout() {
-  const dk=daySelect.value; const key=getTodayWorkoutKey(dk);
-  const exercises=collectWorkoutData(dk); const cardio=collectCardioData();
-  let w=DATA.workouts.find(w=>w.key===key);
-  if(!w){w={key,date:todayStr(),dayKey:dk,exercises:{}}; DATA.workouts.push(w);}
-  w.exercises=exercises; w.cardio=cardio; w.date=todayStr();
-  saveData(DATA); showToast("Entrenamiento guardado ✓");
-}
+daySelect.addEventListener('change', renderRoutine);
+daySelect.value = todayDayKey();
+applyName();
 
-daySelect.addEventListener('change',renderRoutine);
-document.addEventListener('click',e=>{ if(e.target&&e.target.id==='saveWorkoutBtn') saveWorkout(); });
-daySelect.value=todayDayKey();
-renderRoutine();
+// Cargar imágenes desde IndexedDB antes de renderizar
+loadAllImages().then(() => {
+  renderRoutine();
+  renderHeaderDate();
+});
 
 // ===== PESO =====
 const wLbs=document.getElementById('weightLbs');
@@ -742,51 +1323,333 @@ function drawChart(weights) {
   canvas.width=rect.width*dpr; canvas.height=180*dpr; ctx.scale(dpr,dpr);
   const W=rect.width, H=180;
   ctx.clearRect(0,0,W,H);
-  if(weights.length<2){ctx.fillStyle='#6b6f78';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Agrega al menos 2 registros para ver el gráfico',W/2,H/2);return;}
+  if(weights.length<2){ctx.fillStyle='#5e7080';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Agrega al menos 2 registros para ver el gráfico',W/2,H/2);return;}
   const recent=weights.slice(-30);
   const vals=recent.map(w=>w.lbs);
   const minV=Math.min(...vals)-1, maxV=Math.max(...vals)+1, range=maxV-minV||1;
   const pL=36,pR=10,pT=14,pB=22, cW=W-pL-pR, cH=H-pT-pB;
-  ctx.strokeStyle='#2c303a'; ctx.lineWidth=1;
+  ctx.strokeStyle='#243240'; ctx.lineWidth=1;
   for(let i=0;i<=3;i++){
     const y=pT+(cH/3)*i;
     ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
-    ctx.fillStyle='#6b6f78'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+    ctx.fillStyle='#5e7080'; ctx.font='10px sans-serif'; ctx.textAlign='right';
     ctx.fillText((maxV-(range/3)*i).toFixed(0),pL-6,y+3);
   }
-  ctx.beginPath(); ctx.strokeStyle='#3478e0'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.strokeStyle='#2e9aa3'; ctx.lineWidth=2;
   recent.forEach((w,i)=>{
     const x=pL+(cW/(recent.length-1))*i, y=pT+cH-((w.lbs-minV)/range)*cH;
     i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
   }); ctx.stroke();
   recent.forEach((w,i)=>{
     const x=pL+(cW/(recent.length-1))*i, y=pT+cH-((w.lbs-minV)/range)*cH;
-    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle='#3478e0'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle='#2e9aa3'; ctx.fill();
   });
-  ctx.fillStyle='#6b6f78'; ctx.font='10px sans-serif';
+  ctx.fillStyle='#5e7080'; ctx.font='10px sans-serif';
   ctx.textAlign='left'; ctx.fillText(formatDate(recent[0].date),pL,H-4);
   ctx.textAlign='right'; ctx.fillText(formatDate(recent[recent.length-1].date),W-pR,H-4);
 }
 window.addEventListener('resize',()=>{ if(document.getElementById('view-peso').classList.contains('active')) renderPesoView(); });
 
-// ===== HISTORIAL =====
-function renderHistorialView() {
+// ===== PROGRESO (dashboard semanal + historial) =====
+function getWeekDates() {
+  const today = new Date();
+  const dow = today.getDay(); // 0=domingo
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  const dates = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+function renderProgresoView() {
+  const weekGrid = document.getElementById('weekGrid');
+  const weekDates = getWeekDates();
+  const labels = ['L','M','M','J','V','S','D'];
+  const today = todayStr();
+  let anyDone = false;
+  weekGrid.innerHTML = weekDates.map((date, i) => {
+    const done = DATA.workouts.some(w => w.date === date && ((w.manana && (w.manana.exercises || w.manana.distancia)) || (w.tarde && (w.tarde.exercises || w.tarde.distancia))));
+    if(done) anyDone = true;
+    const isToday = date === today;
+    return `<div class="week-day">
+      <div class="week-day-label">${labels[i]}</div>
+      <div class="week-day-dot ${done?'done':''} ${isToday?'today-marker':''}">${done?'&#10003;':''}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('weekEmpty').style.display = anyDone ? 'none' : 'block';
+
   const wh=document.getElementById('weightHistory');
   const wkh=document.getElementById('workoutHistory');
   const sw=[...DATA.weights].sort((a,b)=>b.date.localeCompare(a.date));
   wh.innerHTML=sw.length===0?`<div class="empty-state">Sin registros aún.</div>`:sw.slice(0,20).map(w=>`<div class="history-item"><span class="history-date">${formatDate(w.date)}</span><span>${w.lbs} lb &nbsp;/&nbsp; ${w.kg} kg</span></div>`).join('');
+
   const swk=[...DATA.workouts].sort((a,b)=>b.date.localeCompare(a.date));
   if(swk.length===0){wkh.innerHTML=`<div class="empty-state">Sin entrenamientos registrados aún.</div>`;return;}
   wkh.innerHTML=swk.slice(0,15).map(w=>{
-    const ex=Object.keys(w.exercises||{}).length;
     const dl=DIAS_LABEL[w.dayKey]||w.dayKey;
-    let det=ex>0?`${ex} ejercicios`:'';
-    if(w.cardio){const c=w.cardio,p=[];if(c.distancia)p.push(`${c.distancia}mi`);if(c.duracion)p.push(c.duracion);if(c.calorias)p.push(`${c.calorias}cal`);if(p.length)det+=(det?' · ':'')+'Trote: '+p.join(', ');}
-    return `<div class="history-item"><span class="history-date">${formatDate(w.date)}</span><span>${dl} · ${det||'Sin datos'}</span></div>`;
+    const parts = [];
+    ['manana','tarde'].forEach(m=>{
+      const s = w[m];
+      if(!s) return;
+      if(s.exercises) parts.push(`${m==='manana'?'AM':'PM'}: ${Object.keys(s.exercises).length} ejerc.`);
+      else if(s.distancia || s.duracion) parts.push(`${m==='manana'?'AM':'PM'} trote: ${s.distancia||'?'}mi`);
+    });
+    return `<div class="history-item"><span class="history-date">${formatDate(w.date)}</span><span>${dl} · ${parts.join(', ')||'Sin datos'}</span></div>`;
   }).join('');
 }
 
-renderHeaderDate();
+// ===== EDITOR =====
+const editDaySelect = document.getElementById('editDaySelect');
+DIAS_ORDEN.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=DIAS_LABEL[k]; editDaySelect.appendChild(o); });
+
+function buildExerciseOptions(grupo, selectedNombre) {
+  const ejercicios = getGrupoEjercicios(grupo);
+  const porMusculo = {};
+  ejercicios.forEach(e => {
+    const m = e.musculo || 'Otro';
+    if(!porMusculo[m]) porMusculo[m] = [];
+    porMusculo[m].push(e);
+  });
+  const ordenFijo = MUSCULOS_POR_GRUPO[grupo] || [];
+  const musculosOrdenados = ordenFijo.filter(m => porMusculo[m]).concat(Object.keys(porMusculo).filter(m => !ordenFijo.includes(m)));
+  return musculosOrdenados.map(m => `<optgroup label="${m}">
+    ${porMusculo[m].map(e => `<option value="${e.nombre}" ${e.nombre===selectedNombre?'selected':''}>${e.nombre} (${e.equipo||''})</option>`).join('')}
+  </optgroup>`).join('');
+}
+
+function renderEditorView() {
+  applyName();
+  const dayKey = editDaySelect.value || todayDayKey();
+  editDaySelect.value = dayKey;
+  const day = DATA.rutina[dayKey];
+  const container = document.getElementById('editorContent');
+
+  try {
+  let html = '';
+  let hayAlgo = false;
+
+  ['manana','tarde'].forEach(momento => {
+    const sesion = day[momento];
+    if(!sesion || sesion.tipo !== 'pesas') return;
+    hayAlgo = true;
+    const grupo = sesion.grupo || 'piernas';
+    html += `<div style="margin-bottom:6px; font-weight:600; font-size:13px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">${momento === 'manana' ? 'Mañana' : 'Tarde'}</div>
+      <input type="text" class="session-title-input" data-day="${dayKey}" data-momento="${momento}" value="${sesion.titulo}" placeholder="Título de la sesión" style="margin-bottom:12px; font-weight:600;">`;
+    sesion.ejercicios.forEach((nombreEj, idx) => {
+      let currentGroup = grupo;
+      for(const g in BANCO_EJERCICIOS) { if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombreEj)) { currentGroup = g; break; } }
+      for(const g in DATA.customEjercicios) { if((DATA.customEjercicios[g]||[]).some(e=>e.nombre===nombreEj)) { currentGroup = g; break; } }
+      const def = findEjercicioDef(nombreEj);
+      const musculoNota = def.musculo || '';
+      html += `<div class="editor-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+        ${musculoNota ? `<span style="font-size:15px; font-weight:700; color:var(--text);">${musculoNota}</span>` : ''}
+        <select data-edit-idx="${idx}" data-day="${dayKey}" data-momento="${momento}">
+          ${buildExerciseOptions(currentGroup, nombreEj)}
+        </select>
+      </div>`;
+    });
+    html += `<div style="height:14px;"></div>`;
+  });
+
+  if(!hayAlgo) {
+    html = `<div class="empty-state">Este día no tiene sesión de pesas para editar.</div>`;
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('select[data-edit-idx]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const idx = parseInt(sel.dataset.editIdx);
+      const dk = sel.dataset.day;
+      const mom = sel.dataset.momento;
+      DATA.rutina[dk][mom].ejercicios[idx] = sel.value;
+      saveData(DATA);
+      showToast("Ejercicio actualizado ✓");
+      if(daySelect.value === dk) renderRoutine();
+      renderEditorView();
+    });
+  });
+  container.querySelectorAll('.session-title-input').forEach(inp => {
+    inp.addEventListener('blur', () => {
+      const dk = inp.dataset.day;
+      const mom = inp.dataset.momento;
+      const val = inp.value.trim();
+      if(!val) return;
+      DATA.rutina[dk][mom].titulo = val;
+      saveData(DATA);
+      showToast("Título actualizado ✓");
+      if(daySelect.value === dk) renderRoutine();
+    });
+  });
+  } catch(err) {
+    container.innerHTML = `<div class="empty-state">Hubo un problema mostrando el editor.<br><br><span style="font-size:10px;">${err.message}</span></div>`;
+    console.error('Error en renderEditorView:', err);
+  }
+}
+
+document.getElementById('addExBtn').addEventListener('click', () => {
+  const grupo = document.getElementById('newExGrupo').value;
+  const equipo = document.getElementById('newExEquipo').value;
+  const nombreInput = document.getElementById('newExNombre');
+  const musculoInput = document.getElementById('newExMusculo');
+  const nombre = nombreInput.value.trim();
+  const musculo = musculoInput.value.trim() || GRUPO_LABELS[grupo];
+  if(!nombre) { showToast("Escribe un nombre"); return; }
+  const yaExiste = getGrupoEjercicios(grupo).some(e => e.nombre.toLowerCase() === nombre.toLowerCase());
+  if(yaExiste) { showToast("Ese ejercicio ya existe"); return; }
+  if(!DATA.customEjercicios[grupo]) DATA.customEjercicios[grupo] = [];
+  DATA.customEjercicios[grupo].push({nombre, target:"3 series x 10 reps", sets:3, equipo, musculo});
+  saveData(DATA);
+  nombreInput.value = '';
+  musculoInput.value = '';
+  showToast("Ejercicio agregado ✓");
+  renderEditorView();
+});
+editDaySelect.addEventListener('change', renderEditorView);
+
+// ===== BIBLIOTECA DE EJERCICIOS =====
+const GRUPO_LABELS = {piernas:"Piernas", pecho:"Pecho", triceps:"Tríceps", hombros:"Hombros", espalda:"Espalda", biceps:"Bíceps", core:"Core"};
+let bibliotecaGrupoActivo = null;
+let bibliotecaMusculoActivo = null;
+
+function renderBibliotecaGrupos() {
+  const nav = document.getElementById('bibliotecaGrupos');
+  nav.innerHTML = Object.keys(GRUPO_LABELS).map(g => `
+    <button class="btn-ghost btn-small" data-bib-grupo="${g}" style="margin:3px; ${bibliotecaGrupoActivo===g?'background:var(--accent); color:white; border-color:var(--accent);':''}">${GRUPO_LABELS[g]}</button>
+  `).join('');
+  nav.querySelectorAll('[data-bib-grupo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bibliotecaGrupoActivo = btn.dataset.bibGrupo;
+      bibliotecaMusculoActivo = null;
+      renderBibliotecaGrupos();
+      renderBibliotecaDetalle();
+    });
+  });
+  renderBibliotecaDetalle();
+}
+
+function renderBibliotecaDetalle() {
+  const container = document.getElementById('bibliotecaDetalle');
+  if(!bibliotecaGrupoActivo) {
+    container.innerHTML = `<div class="card"><div class="empty-state">Elige un grupo muscular arriba para ver sus ejercicios.</div></div>`;
+    return;
+  }
+  try {
+    const ejercicios = getGrupoEjercicios(bibliotecaGrupoActivo);
+    const porMusculo = {};
+    ejercicios.forEach(e => {
+      const m = e.musculo || 'Otro';
+      if(!porMusculo[m]) porMusculo[m] = [];
+      porMusculo[m].push(e);
+    });
+    const ordenFijo = MUSCULOS_POR_GRUPO[bibliotecaGrupoActivo] || [];
+    const musculos = ordenFijo.filter(m => porMusculo[m]).concat(Object.keys(porMusculo).filter(m => !ordenFijo.includes(m)));
+
+    const portadaManual = DATA.groupImages && DATA.groupImages[bibliotecaGrupoActivo];
+    const portadaAuto = { piernas: 'img/piernas.jpg' };
+    const portada = portadaManual || portadaAuto[bibliotecaGrupoActivo] || null;
+    let html = `<div class="card">
+      <div class="card-title">${GRUPO_LABELS[bibliotecaGrupoActivo]}
+        <label class="svg-toggle" style="cursor:pointer; font-weight:400;">
+          ${portada ? 'Cambiar imagen' : '+ Imagen de referencia'}
+          <input type="file" accept="image/*" id="groupImgUpload" data-grupo="${bibliotecaGrupoActivo}" style="display:none;">
+        </label>
+      </div>
+      ${portada ? `<img src="${portada}" style="width:100%; border-radius:10px; margin-bottom:10px;">` : ''}
+      <div class="label" style="margin-bottom:8px;">Este grupo tiene ${musculos.length} músculo${musculos.length===1?'':'s'} específico${musculos.length===1?'':'s'} — elige uno</div>
+      <div>
+        ${musculos.map(m => `<button class="btn-ghost btn-small" data-bib-musculo="${m}" style="margin:3px; ${bibliotecaMusculoActivo===m?'background:var(--accent-bright); color:white; border-color:var(--accent-bright);':''}">${m} <span style="opacity:0.6;">(${porMusculo[m].length})</span></button>`).join('')}
+      </div>
+    </div>`;
+
+    if(bibliotecaMusculoActivo && porMusculo[bibliotecaMusculoActivo]) {
+      const porEquipo = {};
+      porMusculo[bibliotecaMusculoActivo].forEach(e => {
+        const eq = e.equipo || 'Otro';
+        if(!porEquipo[eq]) porEquipo[eq] = [];
+        porEquipo[eq].push(e);
+      });
+      html += `<div class="card"><div class="card-title">${bibliotecaMusculoActivo}</div>`;
+      Object.keys(porEquipo).forEach(eq => {
+        html += `<div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin:10px 0 6px;">${eq}</div>`;
+        porEquipo[eq].forEach(ex => {
+          const customImg = findImage(ex.nombre);
+          html += `<div class="exercise-row">
+            <div class="exercise-header">
+              <div>
+                <div class="exercise-name">${ex.nombre}</div>
+                ${ex.en ? `<div style="font-size:11px; color:var(--text-muted); font-style:italic;">${ex.en}</div>` : ''}
+                <div class="exercise-target">${ex.target}</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-shrink:0;">
+                ${customImg ? `<div class="svg-toggle toggle-ver" data-bib-img="${ex.nombre}">Ver</div>` : ''}
+                <label class="svg-toggle" style="cursor:pointer;">
+                  ${customImg ? 'Cambiar' : '+ Foto'}
+                  <input type="file" accept="image/*" class="bib-img-upload-input" data-ex-name="${ex.nombre}" style="display:none;">
+                </label>
+              </div>
+            </div>
+            ${customImg ? `<div class="svg-panel" id="bibimgpanel-${ex.nombre.replace(/[^a-zA-Z0-9]/g,'')}"><img src="${customImg}" style="max-width:100%; border-radius:10px;"></div>` : ''}
+          </div>`;
+        });
+      });
+      html += `</div>`;
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-bib-musculo]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bibliotecaMusculoActivo = btn.dataset.bibMusculo;
+        renderBibliotecaDetalle();
+      });
+    });
+    container.querySelectorAll('.toggle-ver[data-bib-img]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const safeId = btn.dataset.bibImg.replace(/[^a-zA-Z0-9]/g,'');
+        const panel = document.getElementById('bibimgpanel-'+safeId);
+        const open = panel.classList.toggle('open');
+        btn.textContent = open ? 'Ocultar' : 'Ver';
+      });
+    });
+    container.querySelectorAll('.bib-img-upload-input').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          await saveExerciseImage(inp.dataset.exName, ev.target.result);
+          showToast("Foto guardada ✓");
+          renderBibliotecaDetalle();
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    const groupImgInput = document.getElementById('groupImgUpload');
+    if(groupImgInput) {
+      groupImgInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          await saveGroupImage(groupImgInput.dataset.grupo, ev.target.result);
+          showToast("Imagen de referencia guardada ✓");
+          renderBibliotecaDetalle();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  } catch(err) {
+    container.innerHTML = `<div class="card"><div class="empty-state">Hubo un problema. <br><span style="font-size:10px;">${err.message}</span></div></div>`;
+    console.error('Error en biblioteca:', err);
+  }
+}
+
 </script>
 </body>
 </html>
