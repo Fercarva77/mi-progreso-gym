@@ -104,8 +104,8 @@
 <div class="container">
   <div class="tabs">
     <div class="tab active" data-view="rutina">Rutina</div>
+    <div class="tab" data-view="dashboard">Dashboard</div>
     <div class="tab" data-view="peso">Peso</div>
-    <div class="tab" data-view="progreso">Progreso</div>
     <div class="tab" data-view="biblioteca">Ejercicios</div>
     <div class="tab" data-view="editar">Editar</div>
   </div>
@@ -134,15 +134,86 @@
     </div>
   </div>
 
+  <div class="view" id="view-dashboard">
+    <!-- AGUA HOY -->
+    <div class="card">
+      <div class="card-title">Agua de hoy <span class="label" id="aguaFecha"></span></div>
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+        <button class="btn-ghost" id="aguaMenos" style="width:44px; height:44px; font-size:22px; padding:0;">−</button>
+        <div style="flex:1; text-align:center;">
+          <div style="font-size:36px; font-weight:700; color:var(--accent);" id="aguaLitros">0.0</div>
+          <div style="font-size:13px; color:var(--text-secondary);">litros</div>
+        </div>
+        <button class="btn-ghost" id="aguaMas" style="width:44px; height:44px; font-size:22px; padding:0;">+</button>
+      </div>
+      <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
+        <button class="btn-ghost btn-small" data-agua="0.25">+250ml</button>
+        <button class="btn-ghost btn-small" data-agua="0.5">+500ml</button>
+        <button class="btn-ghost btn-small" data-agua="1">+1L</button>
+      </div>
+      <div style="background:var(--card2); border-radius:10px; height:12px; overflow:hidden; margin-bottom:6px;">
+        <div id="aguaBar" style="height:100%; background:var(--accent); border-radius:10px; transition:width 0.3s; width:0%;"></div>
+      </div>
+      <div style="font-size:12px; color:var(--text-secondary); text-align:center;">Meta: 2.5 litros diarios</div>
+    </div>
+
+    <!-- SELECTOR DE PERÍODO -->
+    <div class="card">
+      <div class="card-title">Período de análisis</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px;">
+        <button class="btn-ghost btn-small periodo-btn active" data-periodo="semana">Semana</button>
+        <button class="btn-ghost btn-small periodo-btn" data-periodo="mes">Mes</button>
+        <button class="btn-ghost btn-small periodo-btn" data-periodo="trimestre">Trimestre</button>
+        <button class="btn-ghost btn-small periodo-btn" data-periodo="semestre">Semestre</button>
+        <button class="btn-ghost btn-small periodo-btn" data-periodo="anio">Año</button>
+        <button class="btn-ghost btn-small periodo-btn" data-periodo="todo">Todo</button>
+      </div>
+    </div>
+
+    <!-- STATS DEL PERÍODO -->
+    <div id="dashStats"></div>
+
+    <!-- GRÁFICO DE PESO -->
+    <div class="card">
+      <div class="card-title">Evolución de peso corporal</div>
+      <canvas id="weightChartDash"></canvas>
+    </div>
+
+    <!-- GRÁFICO DE AGUA -->
+    <div class="card">
+      <div class="card-title">Hidratación diaria</div>
+      <canvas id="aguaChart"></canvas>
+    </div>
+
+    <!-- PROGRESO POR EJERCICIO -->
+    <div class="card">
+      <div class="card-title">Progreso en ejercicios</div>
+      <div id="dashEjercicios"></div>
+    </div>
+
+    <!-- RESUMEN DIARIO -->
+    <div class="card">
+      <div class="card-title">Detalle del período</div>
+      <div id="dashDiario"></div>
+    </div>
+
+    <!-- EXPORTAR -->
+    <div class="card">
+      <div class="card-title">Exportar datos</div>
+      <div style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">Descarga un CSV con todo el período seleccionado, compatible con Excel.</div>
+      <button class="btn-primary" id="exportBtn">&#128190; Exportar a Excel</button>
+    </div>
+  </div>
+
   <div class="view" id="view-progreso">
     <div class="card">
       <div class="card-title">Esta semana</div>
-      <div class="week-grid" id="weekGrid"></div>
+      <div class="week-grid" id="weekGrid2"></div>
       <div class="empty-state" id="weekEmpty" style="display:none;">Sin entrenamientos esta semana aún.</div>
     </div>
     <div class="card">
       <div class="card-title">Historial de pesos corporales</div>
-      <div id="weightHistory"></div>
+      <div id="weightHistory2"></div>
     </div>
     <div class="card">
       <div class="card-title">Historial de entrenamientos</div>
@@ -203,8 +274,8 @@
 </div>
 <div class="bottom-nav">
   <div class="nav-item active" data-view="rutina"><span class="nav-icon">&#127947;</span>Rutina</div>
+  <div class="nav-item" data-view="dashboard"><span class="nav-icon">&#128200;</span>Dashboard</div>
   <div class="nav-item" data-view="peso"><span class="nav-icon">&#9878;</span>Peso</div>
-  <div class="nav-item" data-view="progreso"><span class="nav-icon">&#128202;</span>Progreso</div>
   <div class="nav-item" data-view="biblioteca"><span class="nav-icon">&#128218;</span>Ejerc.</div>
   <div class="nav-item" data-view="editar"><span class="nav-icon">&#9881;</span>Editar</div>
 </div>
@@ -1069,6 +1140,7 @@ function setView(view) {
   document.querySelectorAll('.tab,.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
   if(view==='peso') renderPesoView();
   if(view==='progreso') renderProgresoView();
+  if(view==='dashboard') renderDashboard();
   if(view==='editar') renderEditorView();
   if(view==='biblioteca') loadAllImages().then(() => renderBibliotecaGrupos());
   if(view==='rutina') loadAllImages().then(() => renderRoutine());
@@ -1657,6 +1729,350 @@ function renderBibliotecaDetalle() {
     console.error('Error en biblioteca:', err);
   }
 }
+
+// ===== AGUA =====
+const AGUA_KEY = 'carvajalAgua_v1';
+function loadAgua() {
+  try { const r=localStorage.getItem(AGUA_KEY); if(r) return JSON.parse(r); } catch(e){}
+  return {};
+}
+function saveAgua(d) { localStorage.setItem(AGUA_KEY, JSON.stringify(d)); }
+let AGUA = loadAgua();
+
+function getAguaHoy() { return AGUA[todayStr()] || 0; }
+function setAguaHoy(val) {
+  AGUA[todayStr()] = Math.max(0, Math.round(val * 4) / 4);
+  saveAgua(AGUA);
+  renderAguaWidget();
+}
+function renderAguaWidget() {
+  const litros = getAguaHoy();
+  const pct = Math.min(100, (litros / 2.5) * 100);
+  const el = document.getElementById('aguaLitros');
+  const bar = document.getElementById('aguaBar');
+  const fecha = document.getElementById('aguaFecha');
+  if(el) el.textContent = litros.toFixed(2);
+  if(bar) bar.style.width = pct + '%';
+  if(fecha) {
+    const d = new Date();
+    const dias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+    fecha.textContent = dias[d.getDay()];
+  }
+}
+
+document.getElementById('aguaMas')?.addEventListener('click', () => setAguaHoy(getAguaHoy() + 0.25));
+document.getElementById('aguaMenos')?.addEventListener('click', () => setAguaHoy(getAguaHoy() - 0.25));
+document.querySelectorAll('[data-agua]').forEach(btn => {
+  btn.addEventListener('click', () => setAguaHoy(getAguaHoy() + parseFloat(btn.dataset.agua)));
+});
+
+// ===== PERÍODOS =====
+let periodActivo = 'semana';
+
+function getPeriodDates(periodo) {
+  const today = new Date();
+  const todayISO = today.toISOString().split('T')[0];
+  let desde;
+  switch(periodo) {
+    case 'semana': {
+      const dow = today.getDay();
+      const off = dow === 0 ? -6 : 1 - dow;
+      desde = new Date(today); desde.setDate(today.getDate() + off); break;
+    }
+    case 'mes': desde = new Date(today.getFullYear(), today.getMonth(), 1); break;
+    case 'trimestre': desde = new Date(today.getFullYear(), today.getMonth() - 2, 1); break;
+    case 'semestre': desde = new Date(today.getFullYear(), today.getMonth() - 5, 1); break;
+    case 'anio': desde = new Date(today.getFullYear(), 0, 1); break;
+    case 'todo': desde = new Date('2020-01-01'); break;
+    default: desde = new Date(today); desde.setDate(today.getDate() - 6);
+  }
+  return { desde: desde.toISOString().split('T')[0], hasta: todayISO };
+}
+
+document.querySelectorAll('.periodo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    periodActivo = btn.dataset.periodo;
+    renderDashboard();
+  });
+});
+
+// ===== DASHBOARD =====
+function getWeekDates() {
+  const today = new Date();
+  const dow = today.getDay();
+  const off = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today); monday.setDate(today.getDate() + off);
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    return d.toISOString().split('T')[0];
+  });
+}
+
+function renderDashboard() {
+  renderAguaWidget();
+
+  const { desde, hasta } = getPeriodDates(periodActivo);
+  const periodoLabels = {semana:'Esta semana', mes:'Este mes', trimestre:'Últimos 3 meses', semestre:'Últimos 6 meses', anio:'Este año', todo:'Todo el historial'};
+
+  // Filtrar datos del período
+  const pesos = DATA.weights.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>a.date.localeCompare(b.date));
+  const workouts = DATA.workouts.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>a.date.localeCompare(b.date));
+  const aguaDias = Object.entries(AGUA).filter(([d]) => d >= desde && d <= hasta).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  // ===== STATS =====
+  const statsEl = document.getElementById('dashStats');
+  if(statsEl) {
+    const totalSesiones = workouts.length;
+    const totalKm = workouts.reduce((acc, w) => {
+      ['manana','tarde'].forEach(m => { if(w[m]?.distancia) acc += parseFloat(w[m].distancia)||0; });
+      return acc;
+    }, 0);
+    const avgAgua = aguaDias.length > 0 ? (aguaDias.reduce((a,[,v])=>a+v,0)/aguaDias.length) : 0;
+    const pesoInicio = pesos.length > 0 ? pesos[0].lbs : null;
+    const pesoFin = pesos.length > 0 ? pesos[pesos.length-1].lbs : null;
+    const deltaPeso = pesoInicio && pesoFin ? (pesoFin - pesoInicio).toFixed(1) : null;
+
+    statsEl.innerHTML = `<div class="card">
+      <div class="card-title">${periodoLabels[periodActivo]}</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-label">Sesiones entrenadas</div><div class="stat-value">${totalSesiones}</div></div>
+        <div class="stat-box"><div class="stat-label">Millas corridas</div><div class="stat-value">${totalKm.toFixed(1)}</div></div>
+        <div class="stat-box"><div class="stat-label">Agua promedio/día</div><div class="stat-value">${avgAgua.toFixed(1)}L</div></div>
+        ${deltaPeso !== null ? `<div class="stat-box"><div class="stat-label">Cambio de peso</div><div class="stat-value ${parseFloat(deltaPeso)<=0?'delta-down':'delta-up'}">${parseFloat(deltaPeso)>0?'+':''}${deltaPeso} lb</div></div>` : '<div class="stat-box"><div class="stat-label">Peso</div><div class="stat-value" style="color:var(--text-muted)">Sin datos</div></div>'}
+      </div>
+    </div>`;
+  }
+
+  // ===== GRÁFICO DE PESO =====
+  drawLineChart('weightChartDash', pesos.map(p=>({x:p.date, y:p.lbs})), 'lb', '#2389a0');
+
+  // ===== GRÁFICO DE AGUA =====
+  drawBarChart('aguaChart', aguaDias.map(([d,v])=>({x:d, y:v})), 'L', '#4cc4cd', 2.5);
+
+  // ===== PROGRESO EJERCICIOS =====
+  const ejEl = document.getElementById('dashEjercicios');
+  if(ejEl) {
+    const progresos = {};
+    workouts.forEach(w => {
+      ['manana','tarde'].forEach(m => {
+        const s = w[m];
+        if(!s?.exercises) return;
+        Object.entries(s.exercises).forEach(([nombre, sets]) => {
+          const maxPeso = Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+          if(maxPeso <= 0) return;
+          if(!progresos[nombre]) progresos[nombre] = [];
+          progresos[nombre].push({date: w.date, peso: maxPeso});
+        });
+      });
+    });
+    const ejerciciosConProgreso = Object.entries(progresos)
+      .filter(([,arr]) => arr.length >= 2)
+      .map(([nombre, arr]) => {
+        arr.sort((a,b)=>a.date.localeCompare(b.date));
+        const inicio = arr[0].peso;
+        const fin = arr[arr.length-1].peso;
+        const delta = fin - inicio;
+        return {nombre, inicio, fin, delta, sesiones: arr.length};
+      })
+      .filter(e => e.delta !== 0)
+      .sort((a,b) => b.delta - a.delta);
+
+    if(ejerciciosConProgreso.length === 0) {
+      ejEl.innerHTML = `<div class="empty-state">Sin progreso registrado aún en este período.</div>`;
+    } else {
+      ejEl.innerHTML = ejerciciosConProgreso.slice(0,10).map(e => `
+        <div class="history-item">
+          <div>
+            <div style="font-size:13px; font-weight:600;">${e.nombre}</div>
+            <div style="font-size:11px; color:var(--text-muted);">${e.sesiones} sesiones</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px; font-weight:600; color:${e.delta>0?'var(--success)':'var(--danger)'};">${e.delta>0?'+':''}${e.delta} lb</div>
+            <div style="font-size:11px; color:var(--text-muted);">${e.inicio}→${e.fin} lb</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // ===== DETALLE DIARIO =====
+  const dashDiario = document.getElementById('dashDiario');
+  if(dashDiario) {
+    const allDates = [...new Set([
+      ...pesos.map(p=>p.date),
+      ...workouts.map(w=>w.date),
+      ...aguaDias.map(([d])=>d)
+    ])].sort().reverse();
+
+    if(allDates.length === 0) {
+      dashDiario.innerHTML = `<div class="empty-state">Sin datos en este período aún.</div>`;
+    } else {
+      dashDiario.innerHTML = allDates.slice(0,30).map(date => {
+        const workout = workouts.find(w=>w.date===date);
+        const agua = AGUA[date]||0;
+        const peso = pesos.find(p=>p.date===date);
+        const isToday = date === todayStr();
+        let html = `<div style="border-top:0.5px solid var(--border); padding:10px 0;">
+          <div style="font-weight:600; font-size:13px; margin-bottom:4px; color:${isToday?'var(--accent)':'var(--text)'};">${formatDate(date)}${isToday?' · hoy':''}</div>`;
+        if(peso) html += `<div style="font-size:12px; color:var(--text-secondary);">⚖️ ${peso.lbs} lb / ${peso.kg} kg</div>`;
+        if(agua>0) html += `<div style="font-size:12px; color:var(--text-secondary);">💧 ${agua.toFixed(2)} L</div>`;
+        if(workout) {
+          ['manana','tarde'].forEach(m => {
+            const s = workout[m];
+            if(!s) return;
+            if(s.distancia||s.duracion) html += `<div style="font-size:12px; color:var(--text-secondary);">🏃 ${s.distancia||'?'}mi · ${s.duracion||'?'} · ${s.calorias||'?'} cal</div>`;
+            if(s.exercises) {
+              const exCount = Object.keys(s.exercises).length;
+              html += `<div style="font-size:12px; color:var(--text-secondary);">💪 ${m==='manana'?'AM':'PM'}: ${exCount} ejercicios</div>`;
+            }
+          });
+        }
+        html += `</div>`;
+        return html;
+      }).join('');
+    }
+  }
+}
+
+// ===== GRÁFICOS =====
+function drawLineChart(canvasId, data, unit, color) {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio||1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width*dpr; canvas.height = 180*dpr; ctx.scale(dpr,dpr);
+  const W=rect.width, H=180;
+  ctx.clearRect(0,0,W,H);
+  if(data.length < 2) {
+    ctx.fillStyle='#8a96a3'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Sin suficientes datos aún', W/2, H/2); return;
+  }
+  const vals = data.map(d=>d.y);
+  const minV=Math.min(...vals)-1, maxV=Math.max(...vals)+1, range=maxV-minV||1;
+  const pL=42,pR=10,pT=14,pB=22, cW=W-pL-pR, cH=H-pT-pB;
+  ctx.strokeStyle='#dde3ea'; ctx.lineWidth=1;
+  for(let i=0;i<=3;i++){
+    const y=pT+(cH/3)*i;
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+    ctx.fillStyle='#8a96a3'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+    ctx.fillText((maxV-(range/3)*i).toFixed(1)+unit, pL-4, y+3);
+  }
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2;
+  data.forEach((d,i)=>{
+    const x=pL+(cW/(data.length-1))*i, y=pT+cH-((d.y-minV)/range)*cH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }); ctx.stroke();
+  data.forEach((d,i)=>{
+    const x=pL+(cW/(data.length-1))*i, y=pT+cH-((d.y-minV)/range)*cH;
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+  });
+  ctx.fillStyle='#8a96a3'; ctx.font='10px sans-serif';
+  ctx.textAlign='left'; ctx.fillText(formatDate(data[0].x),pL,H-4);
+  ctx.textAlign='right'; ctx.fillText(formatDate(data[data.length-1].x),W-pR,H-4);
+}
+
+function drawBarChart(canvasId, data, unit, color, meta) {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio||1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width*dpr; canvas.height = 160*dpr; ctx.scale(dpr,dpr);
+  const W=rect.width, H=160;
+  ctx.clearRect(0,0,W,H);
+  if(data.length === 0) {
+    ctx.fillStyle='#8a96a3'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Sin datos de agua aún', W/2, H/2); return;
+  }
+  const recent = data.slice(-14);
+  const maxV = Math.max(meta||2.5, ...recent.map(d=>d.y));
+  const pL=10,pR=10,pT=14,pB=22, cW=W-pL-pR, cH=H-pT-pB;
+  const barW = Math.max(4, (cW/recent.length) - 4);
+  // Línea de meta
+  if(meta) {
+    const metaY = pT+cH-((meta/maxV)*cH);
+    ctx.strokeStyle='#d0563f'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(pL,metaY); ctx.lineTo(W-pR,metaY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#d0563f'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`Meta ${meta}${unit}`,pL+2,metaY-3);
+  }
+  recent.forEach((d,i) => {
+    const x = pL + (cW/recent.length)*i + (cW/recent.length - barW)/2;
+    const barH = (d.y/maxV)*cH;
+    const y = pT+cH-barH;
+    const pct = d.y/meta;
+    ctx.fillStyle = pct >= 1 ? '#2e9a5c' : pct >= 0.6 ? color : '#e0735a';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x,y,barW,barH,3) : ctx.rect(x,y,barW,barH);
+    ctx.fill();
+  });
+  ctx.fillStyle='#8a96a3'; ctx.font='10px sans-serif';
+  ctx.textAlign='left'; ctx.fillText(formatDate(recent[0].x),pL,H-4);
+  ctx.textAlign='right'; ctx.fillText(formatDate(recent[recent.length-1].x),W-pR,H-4);
+}
+
+// ===== EXPORTAR EXCEL =====
+document.getElementById('exportBtn')?.addEventListener('click', exportarExcel);
+
+function exportarExcel() {
+  const { desde, hasta } = getPeriodDates(periodActivo);
+  const periodoLabels = {semana:'Semana', mes:'Mes', trimestre:'Trimestre', semestre:'Semestre', anio:'Año', todo:'Historial'};
+
+  const pesos = DATA.weights.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>a.date.localeCompare(b.date));
+  const workouts = DATA.workouts.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>a.date.localeCompare(b.date));
+  const aguaDias = Object.entries(AGUA).filter(([d]) => d >= desde && d <= hasta).sort();
+
+  const rows = [];
+  rows.push([`REPORTE ${periodoLabels[periodActivo].toUpperCase()} — CARVAJAL GYM`]);
+  rows.push([`Período: ${formatDate(desde)} al ${formatDate(hasta)}`]);
+  rows.push([]);
+
+  rows.push(['=== PESO CORPORAL ===']);
+  rows.push(['Fecha', 'Libras', 'Kilos']);
+  pesos.forEach(p => rows.push([p.date, p.lbs, p.kg]));
+  rows.push([]);
+
+  rows.push(['=== HIDRATACIÓN ===']);
+  rows.push(['Fecha', 'Litros']);
+  aguaDias.forEach(([d,v]) => rows.push([d, v.toFixed(2)]));
+  rows.push([]);
+
+  rows.push(['=== ENTRENAMIENTOS ===']);
+  workouts.forEach(w => {
+    rows.push([w.date.toUpperCase()]);
+    ['manana','tarde'].forEach(m => {
+      const s = w[m];
+      if(!s) return;
+      if(s.distancia||s.duracion) {
+        rows.push(['Trote', `${s.distancia||'-'}mi`, s.duracion||'-', `${s.calorias||'-'}cal`, `${s.velocidad||'-'}mph`]);
+      }
+      if(s.exercises) {
+        rows.push(['Ejercicio','Serie 1','Serie 2','Serie 3','Serie 4']);
+        Object.entries(s.exercises).forEach(([nombre, sets]) => {
+          rows.push([nombre, ...sets.map(s=>s.peso?`${s.peso}lb×${s.reps}`:'-')]);
+        });
+      }
+    });
+    rows.push([]);
+  });
+
+  const BOM = '\uFEFF';
+  const csv = BOM + rows.map(row => row.map(cell=>`"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `CarvajálGym_${periodoLabels[periodActivo]}_${desde}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exportado ✓');
+}
+
+
 
 </script>
 </body>
