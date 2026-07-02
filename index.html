@@ -185,9 +185,25 @@
       <canvas id="aguaChart"></canvas>
     </div>
 
+    <!-- HISTORIAL POR ZONA MUSCULAR -->
+    <div class="card">
+      <div class="card-title">Historial por zona muscular</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+        <button class="btn-ghost btn-small zona-btn active" data-zona="todo">Todos</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="piernas">Piernas</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="pecho">Pecho</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="hombros">Hombros</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="espalda">Espalda</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="biceps">Bíceps</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="triceps">Tríceps</button>
+        <button class="btn-ghost btn-small zona-btn" data-zona="core">Core</button>
+      </div>
+      <div id="dashZona"></div>
+    </div>
+
     <!-- PROGRESO POR EJERCICIO -->
     <div class="card">
-      <div class="card-title">Progreso en ejercicios</div>
+      <div class="card-title">Top progreso de ejercicios</div>
       <div id="dashEjercicios"></div>
     </div>
 
@@ -1134,7 +1150,32 @@ document.getElementById('saveNameBtn').addEventListener('click', () => {
 });
 
 // ===== NAV =====
+function autoGuardarRutina() {
+  // Guarda silenciosamente todo lo que hay en pantalla sin mostrar toast
+  const dayKey = daySelect.value;
+  const day = DATA.rutina[dayKey];
+  if(!day) return;
+  const key = getTodayWorkoutKey(dayKey);
+  let w = DATA.workouts.find(w=>w.key===key);
+  let cambio = false;
+  ['manana','tarde'].forEach(momento => {
+    const sesion = day[momento];
+    if(!sesion || (sesion.tipo !== 'pesas' && sesion.tipo !== 'cardio')) return;
+    const data = collectMomentoData(dayKey, momento);
+    if(!data) return;
+    if(!w) { w = {key, date:todayStr(), dayKey, manana:null, tarde:null}; DATA.workouts.push(w); }
+    w[momento] = data;
+    if(!w.date) w.date = todayStr();
+    cambio = true;
+  });
+  if(cambio) saveData(DATA);
+}
+
 function setView(view) {
+  // Autoguardar antes de salir de Rutina
+  if(document.getElementById('view-rutina').classList.contains('active')) {
+    autoGuardarRutina();
+  }
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
   document.querySelectorAll('.tab,.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
@@ -1214,42 +1255,71 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
       const saved = savedSession.exercises[nombreEj];
       let usedCopy = false;
       let sets = saved;
+      // Buscar última sesión real (no la de hoy) para referencia
+      const lastUsedSets = getLastUsedSets(nombreEj, key);
       if(!sets) {
-        const lastUsed = getLastUsedSets(nombreEj, key);
-        if(lastUsed) { sets = lastUsed.map(s=>({peso:s.peso, reps:s.reps, done:false})); usedCopy = true; }
+        if(lastUsedSets) { sets = lastUsedSets.map(s=>({peso:s.peso, reps:s.reps, done:false})); usedCopy = true; }
       }
       if(!sets) sets = [];
       const hasSvg = !!SVGS[nombreEj];
       const customImg = findImage(nombreEj);
       const hasVisual = hasSvg || customImg;
-      html += `<div class="exercise-row">`;
+      let grupoEj = 'piernas';
+      for(const g in BANCO_EJERCICIOS) { if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombreEj)) { grupoEj=g; break; } }
+      html += `<div class="exercise-row" data-ex-idx="${exIdx}" data-momento-row="${momento}">`;
       html += `<div class="exercise-header">
-        <div>
-          <div class="exercise-name">${nombreEj}${usedCopy?'<span class="copied-tag">peso copiado de la última vez</span>':''}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="exercise-name">${nombreEj}</div>
           ${def.en ? `<div style="font-size:11px; color:var(--text-muted); font-style:italic;">${def.en}</div>` : ''}
           <div class="exercise-target">${def.target}${def.musculo ? ' · '+def.musculo : ''}</div>
         </div>
-        <div style="display:flex; gap:6px; flex-shrink:0; align-items:center;">
+        <div style="display:flex; gap:4px; flex-shrink:0; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+          <div class="svg-toggle swap-ex-btn" data-momento="${momento}" data-ex="${exIdx}" data-grupo="${grupoEj}" style="cursor:pointer;">⇄ Cambiar</div>
           ${hasVisual ? `<div class="svg-toggle toggle-ver" data-idx="${momento}-${exIdx}">Ver</div>` : ''}
           <label class="svg-toggle img-upload-label" style="cursor:pointer;">
-            ${customImg ? 'Cambiar' : '+ Foto'}
+            ${customImg ? '📷' : '+ Foto'}
             <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
           </label>
         </div>
       </div>`;
+      // Panel swap
+      html += `<div class="svg-panel swap-panel" id="swappanel-${momento}-${exIdx}" style="padding:8px;">
+        <div style="font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Elige otro ejercicio de ${grupoEj}:</div>
+        <select class="swap-select" data-momento="${momento}" data-ex="${exIdx}" data-day="${daySelect.value}">
+          ${buildExerciseOptions(grupoEj, nombreEj)}
+        </select>
+        <button class="btn-primary btn-small swap-confirm-btn" data-momento="${momento}" data-ex="${exIdx}" data-day="${daySelect.value}" style="margin-top:6px;">Confirmar cambio</button>
+      </div>`;
       if(hasVisual) {
         html += `<div class="svg-panel" id="svgpanel-${momento}-${exIdx}">${customImg ? `<img src="${customImg}" style="max-width:100%; border-radius:10px;">` : SVGS[nombreEj]}</div>`;
       }
-      html += `<div class="sets-header"><span>#</span><span>Peso (lb)</span><span>Reps</span><span></span></div>`;
-      for(let s=0; s<def.sets; s++) {
+      // Encabezado con columna de referencia
+      html += `<div style="display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; margin-bottom:4px;">
+        <span style="font-size:11px; color:var(--text-muted); text-align:center;">#</span>
+        <span style="font-size:11px; color:var(--text-muted); text-align:center;">Peso (lb)</span>
+        <span style="font-size:11px; color:var(--text-muted); text-align:center;">Reps</span>
+        <span></span>
+      </div>`;
+      const totalSeries = Math.max(sets.length, def.sets);
+      for(let s=0; s<totalSeries; s++) {
         const sd = sets[s]||{peso:'',reps:'',done:false};
-        html += `<div class="sets-grid">
-          <div class="set-num">${s+1}</div>
-          <input type="number" inputmode="decimal" placeholder="lb" value="${sd.peso}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}" data-field="peso" class="set-input">
-          <input type="number" inputmode="numeric" placeholder="reps" value="${sd.reps}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}" data-field="reps" class="set-input">
-          <div class="check-btn ${sd.done?'done':''}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}">&#10003;</div>
+        const refSet = lastUsedSets && lastUsedSets[s];
+        const refTexto = refSet && refSet.peso ? `Última: ${refSet.peso}lb × ${refSet.reps||'?'}` : '';
+        html += `<div>
+          <div class="sets-grid" data-set-row="${s}" data-momento="${momento}" data-ex="${exIdx}">
+            <div class="set-num">${s+1}</div>
+            <input type="number" inputmode="decimal" placeholder="${refSet?.peso||'lb'}" value="${sd.peso}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}" data-field="peso" class="set-input">
+            <input type="number" inputmode="numeric" placeholder="${refSet?.reps||'reps'}" value="${sd.reps}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}" data-field="reps" class="set-input">
+            <div class="check-btn ${sd.done?'done':''}" data-momento="${momento}" data-ex="${exIdx}" data-set="${s}">&#10003;</div>
+          </div>
+          ${refTexto ? `<div style="font-size:10px; color:var(--text-muted); padding-left:34px; margin-top:-2px; margin-bottom:4px;">${refTexto}</div>` : ''}
         </div>`;
       }
+      // Botones + y - serie
+      html += `<div style="display:flex; gap:6px; margin-top:6px;">
+        <button class="btn-ghost btn-small add-set-btn" data-momento="${momento}" data-ex="${exIdx}" data-day="${daySelect.value}">+ Serie</button>
+        <button class="btn-ghost btn-small del-set-btn" data-momento="${momento}" data-ex="${exIdx}" data-day="${daySelect.value}" style="color:var(--danger);">− Serie</button>
+      </div>`;
       html += `</div>`;
     });
     html += `<button class="btn-primary btn-small" data-save-momento="${momento}" style="margin-top:8px;">Guardar ${momentoLabel.toLowerCase()}</button>`;
@@ -1299,6 +1369,74 @@ function renderRoutine() {
     container.querySelectorAll('[data-save-momento]').forEach(btn=>{
       btn.addEventListener('click', () => saveMomento(dayKey, btn.dataset.saveMomento));
     });
+
+    // Swap de ejercicio — mostrar/ocultar panel
+    container.querySelectorAll('.swap-ex-btn').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById(`swappanel-${btn.dataset.momento}-${btn.dataset.ex}`);
+        const open = panel.classList.toggle('open');
+        btn.textContent = open ? '✕ Cerrar' : '⇄ Cambiar';
+      });
+    });
+
+    // Confirmar swap — guarda datos actuales, cambia el ejercicio y rerenderiza
+    container.querySelectorAll('.swap-confirm-btn').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        const mom = btn.dataset.momento;
+        const exIdx = parseInt(btn.dataset.ex);
+        const dk = btn.dataset.day;
+        const select = document.querySelector(`.swap-select[data-momento="${mom}"][data-ex="${exIdx}"]`);
+        const nuevoNombre = select.value;
+        // Guardar estado actual antes de cambiar
+        autoGuardarRutina();
+        // Cambiar el ejercicio en la rutina
+        DATA.rutina[dk][mom].ejercicios[exIdx] = nuevoNombre;
+        saveData(DATA);
+        showToast(`Cambiado a: ${nuevoNombre}`);
+        renderRoutine();
+      });
+    });
+
+    // Agregar serie
+    container.querySelectorAll('.add-set-btn').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        const mom = btn.dataset.momento;
+        const exIdx = parseInt(btn.dataset.ex);
+        const dk = btn.dataset.day;
+        // Guardar estado actual primero
+        autoGuardarRutina();
+        // Agregar serie vacía al workout guardado
+        const key = getTodayWorkoutKey(dk);
+        let w = DATA.workouts.find(w=>w.key===key);
+        if(!w) { w = {key, date:todayStr(), dayKey:dk, manana:null, tarde:null}; DATA.workouts.push(w); }
+        if(!w[mom]) w[mom] = {exercises:{}};
+        if(!w[mom].exercises) w[mom].exercises = {};
+        const nombreEj = DATA.rutina[dk][mom].ejercicios[exIdx];
+        if(!w[mom].exercises[nombreEj]) w[mom].exercises[nombreEj] = [];
+        w[mom].exercises[nombreEj].push({peso:'', reps:'', done:false});
+        saveData(DATA);
+        renderRoutine();
+      });
+    });
+
+    // Eliminar última serie con confirmación
+    container.querySelectorAll('.del-set-btn').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        const mom = btn.dataset.momento;
+        const exIdx = parseInt(btn.dataset.ex);
+        const dk = btn.dataset.day;
+        const nombreEj = DATA.rutina[dk][mom].ejercicios[exIdx];
+        const key = getTodayWorkoutKey(dk);
+        let w = DATA.workouts.find(w=>w.key===key);
+        const sets = w?.[mom]?.exercises?.[nombreEj] || [];
+        if(sets.length <= 1) { showToast("Mínimo 1 serie"); return; }
+        if(!confirm(`¿Eliminar la serie ${sets.length} de "${nombreEj}"?`)) return;
+        autoGuardarRutina();
+        w[mom].exercises[nombreEj].pop();
+        saveData(DATA);
+        renderRoutine();
+      });
+    });
   } catch(err) {
     container.innerHTML = `<div class="card"><div class="empty-state">Hubo un problema mostrando este día. Intenta recargar la página.<br><br><span style="font-size:10px;">${err.message}</span></div></div>`;
     console.error('Error en renderRoutine:', err);
@@ -1320,15 +1458,18 @@ function collectMomentoData(dayKey, momento) {
   } else if(sesion.tipo === 'pesas') {
     const exercises = {};
     sesion.ejercicios.forEach((nombreEj, exIdx) => {
-      const def = findEjercicioDef(nombreEj);
       const sets = [];
-      for(let s=0; s<def.sets; s++) {
+      // Leer todas las series que existen en pantalla (dinámicas)
+      let s = 0;
+      while(true) {
         const pi=document.querySelector(`.set-input[data-momento="${momento}"][data-ex="${exIdx}"][data-set="${s}"][data-field="peso"]`);
+        if(!pi) break;
         const ri=document.querySelector(`.set-input[data-momento="${momento}"][data-ex="${exIdx}"][data-set="${s}"][data-field="reps"]`);
         const cb=document.querySelector(`.check-btn[data-momento="${momento}"][data-ex="${exIdx}"][data-set="${s}"]`);
-        sets.push({peso:pi?pi.value:'', reps:ri?ri.value:'', done:cb?cb.classList.contains('done'):false});
+        sets.push({peso:pi.value, reps:ri?ri.value:'', done:cb?cb.classList.contains('done'):false});
+        s++;
       }
-      exercises[nombreEj] = sets;
+      if(sets.length > 0) exercises[nombreEj] = sets;
     });
     return {exercises};
   }
@@ -1341,7 +1482,8 @@ function saveMomento(dayKey, momento) {
   let w = DATA.workouts.find(w=>w.key===key);
   if(!w) { w = {key, date:todayStr(), dayKey, manana:null, tarde:null}; DATA.workouts.push(w); }
   w[momento] = data;
-  w.date = todayStr();
+  // Solo actualizar la fecha si es un workout nuevo (no sobreescribir fecha original)
+  if(!w.date) w.date = todayStr();
   saveData(DATA);
   showToast("Guardado ✓");
 }
@@ -1768,6 +1910,16 @@ document.querySelectorAll('[data-agua]').forEach(btn => {
 
 // ===== PERÍODOS =====
 let periodActivo = 'semana';
+let zonaActiva = 'todo';
+
+document.querySelectorAll('.zona-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.zona-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    zonaActiva = btn.dataset.zona;
+    renderZonaHistorial();
+  });
+});
 
 function getPeriodDates(periodo) {
   const today = new Date();
@@ -1810,8 +1962,73 @@ function getWeekDates() {
   });
 }
 
+// ===== HISTORIAL POR ZONA MUSCULAR =====
+function getGrupoDeEjercicio(nombre) {
+  for(const g in BANCO_EJERCICIOS) {
+    if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombre)) return g;
+  }
+  for(const g in DATA.customEjercicios||{}) {
+    if((DATA.customEjercicios[g]||[]).some(e=>e.nombre===nombre)) return g;
+  }
+  return null;
+}
+
+function renderZonaHistorial() {
+  const el = document.getElementById('dashZona');
+  if(!el) return;
+  const { desde, hasta } = getPeriodDates(periodActivo);
+  const workouts = DATA.workouts.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>b.date.localeCompare(a.date));
+
+  // Recopilar todos los ejercicios por zona
+  const porZona = {};
+  workouts.forEach(w => {
+    ['manana','tarde'].forEach(m => {
+      const s = w[m];
+      if(!s?.exercises) return;
+      Object.entries(s.exercises).forEach(([nombre, sets]) => {
+        const grupo = getGrupoDeEjercicio(nombre);
+        if(!grupo) return;
+        if(zonaActiva !== 'todo' && grupo !== zonaActiva) return;
+        if(!porZona[nombre]) porZona[nombre] = [];
+        const maxPeso = Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+        const totalReps = sets.reduce((a,s)=>a+(parseInt(s.reps)||0),0);
+        porZona[nombre].push({date: w.date, maxPeso, totalReps, sets, grupo});
+      });
+    });
+  });
+
+  if(Object.keys(porZona).length === 0) {
+    el.innerHTML = `<div class="empty-state">Sin datos de ejercicios en este período.</div>`;
+    return;
+  }
+
+  const GRUPO_LABELS_ES = {piernas:'🦵 Piernas', pecho:'💪 Pecho', hombros:'🏋️ Hombros', espalda:'🔙 Espalda', biceps:'💪 Bíceps', triceps:'💪 Tríceps', core:'🧘 Core'};
+
+  el.innerHTML = Object.entries(porZona).map(([nombre, registros]) => {
+    const grupo = registros[0].grupo;
+    const ultimo = registros[0];
+    const primero = registros[registros.length-1];
+    const delta = ultimo.maxPeso - primero.maxPeso;
+    const mejor = Math.max(...registros.map(r=>r.maxPeso));
+    return `<div style="border-top:0.5px solid var(--border); padding:10px 0;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="font-size:13px; font-weight:600;">${nombre}</div>
+          <div style="font-size:11px; color:var(--text-muted);">${GRUPO_LABELS_ES[grupo]||grupo} · ${registros.length} sesión${registros.length!==1?'es':''}</div>
+          <div style="font-size:11px; color:var(--text-secondary);">Mejor: ${mejor>0?mejor+' lb':'sin peso'} · Último: ${formatDate(ultimo.date)}</div>
+        </div>
+        ${delta !== 0 ? `<div style="font-size:14px; font-weight:700; color:${delta>0?'var(--success)':'var(--danger)'};">${delta>0?'+':''}${delta} lb</div>` : ''}
+      </div>
+      <div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">
+        ${registros.slice(0,6).reverse().map(r=>`<div style="background:var(--card2); border-radius:6px; padding:3px 7px; font-size:11px; color:var(--text-secondary);">${formatDate(r.date)}: ${r.maxPeso>0?r.maxPeso+'lb':'—'}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderDashboard() {
   renderAguaWidget();
+  renderZonaHistorial();
 
   const { desde, hasta } = getPeriodDates(periodActivo);
   const periodoLabels = {semana:'Esta semana', mes:'Este mes', trimestre:'Últimos 3 meses', semestre:'Últimos 6 meses', anio:'Este año', todo:'Todo el historial'};
@@ -1924,8 +2141,11 @@ function renderDashboard() {
             if(!s) return;
             if(s.distancia||s.duracion) html += `<div style="font-size:12px; color:var(--text-secondary);">🏃 ${s.distancia||'?'}mi · ${s.duracion||'?'} · ${s.calorias||'?'} cal</div>`;
             if(s.exercises) {
-              const exCount = Object.keys(s.exercises).length;
-              html += `<div style="font-size:12px; color:var(--text-secondary);">💪 ${m==='manana'?'AM':'PM'}: ${exCount} ejercicios</div>`;
+              const nombres = Object.keys(s.exercises);
+              const grupos = [...new Set(nombres.map(n=>getGrupoDeEjercicio(n)).filter(Boolean))];
+              const GEMOJI = {piernas:'🦵',pecho:'🫀',hombros:'🏋️',espalda:'🔙',biceps:'💪',triceps:'💪',core:'🧘'};
+              const gruposStr = grupos.map(g=>`${GEMOJI[g]||''}${g}`).join(', ');
+              html += `<div style="font-size:12px; color:var(--text-secondary);">💪 ${m==='manana'?'AM':'PM'}: ${nombres.length} ejercicios${gruposStr?` (${gruposStr})`:''}</div>`;
             }
           });
         }
