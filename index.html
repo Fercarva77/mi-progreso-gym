@@ -63,7 +63,7 @@
   .sets-grid { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; align-items:center; margin-bottom:6px; }
   .sets-grid .set-num { font-size:12px; color:var(--text-muted); text-align:center; }
   .sets-grid input { padding:8px 8px; font-size:14px; text-align:center; }
-  .check-btn { width:32px; height:32px; border-radius:50%; background:var(--card2); border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text-muted); cursor:pointer; flex-shrink:0; }
+  .check-btn { width:32px; height:32px; border-radius:50%; background:#fde8e8; border:1.5px solid var(--danger); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--danger); cursor:pointer; flex-shrink:0; }
   .check-btn.done { background:var(--success-light); color:var(--success); border-color:var(--success); }
   .sets-header { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; margin-bottom:6px; }
   .sets-header span { font-size:11px; color:var(--text-muted); text-align:center; }
@@ -1232,7 +1232,7 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
   const cardClass = isToday ? 'today' : 'muted';
   let html = `<div class="session-card ${cardClass}" style="background:${grupoColor.bg}; border-color:${grupoColor.c}66;">`;
   html += `<div class="session-label">${momentoLabel}${isToday?' · hoy':''}</div>`;
-  html += `<div class="day-pill" style="background:${grupoColor.c}33; color:${grupoColor.c};">${sesion.titulo}</div>`;
+  html += `<div style="font-size:22px; font-weight:800; color:${grupoColor.c}; margin-bottom:4px; letter-spacing:-0.5px;">${sesion.titulo}</div>`;
 
   const key = getTodayWorkoutKey(dayKey);
 
@@ -1250,15 +1250,31 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
     html += `<button class="btn-primary btn-small" data-save-momento="${momento}">Guardar trote</button>`;
   } else if(sesion.tipo === 'pesas') {
     const savedSession = getSavedSession(dayKey, momento) || {exercises:{}};
+    // Agrupar por músculo específico
+    const porMusculo = {};
     sesion.ejercicios.forEach((nombreEj, exIdx) => {
       const def = findEjercicioDef(nombreEj);
+      const m = def.musculo || 'General';
+      if(!porMusculo[m]) porMusculo[m] = [];
+      porMusculo[m].push({nombreEj, exIdx});
+    });
+    let musculoAnterior = null;
+    sesion.ejercicios.forEach((nombreEj, exIdx) => {
+      const def = findEjercicioDef(nombreEj);
+      const musculoActual = def.musculo || 'General';
+      // Insertar subtítulo cuando cambia el músculo
+      if(musculoActual !== musculoAnterior) {
+        html += `<div style="margin:${musculoAnterior?'18px':'8px'} 0 8px; padding-bottom:4px; border-bottom:2px solid ${grupoColor.c}55;">
+          <span style="font-size:15px; font-weight:700; color:${grupoColor.c};">${musculoActual}</span>
+        </div>`;
+        musculoAnterior = musculoActual;
+      }
       const saved = savedSession.exercises[nombreEj];
-      let usedCopy = false;
       let sets = saved;
       // Buscar última sesión real (no la de hoy) para referencia
       const lastUsedSets = getLastUsedSets(nombreEj, key);
       if(!sets) {
-        if(lastUsedSets) { sets = lastUsedSets.map(s=>({peso:s.peso, reps:s.reps, done:false})); usedCopy = true; }
+        if(lastUsedSets) { sets = lastUsedSets.map(s=>({peso:s.peso, reps:s.reps, done:false})); }
       }
       if(!sets) sets = [];
       const hasSvg = !!SVGS[nombreEj];
@@ -1298,7 +1314,7 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
         <span style="font-size:11px; color:var(--text-muted); text-align:center;">#</span>
         <span style="font-size:11px; color:var(--text-muted); text-align:center;">Peso (lb)</span>
         <span style="font-size:11px; color:var(--text-muted); text-align:center;">Reps</span>
-        <span></span>
+        <span style="font-size:10px; color:var(--danger); text-align:center; font-weight:600;">✓</span>
       </div>`;
       const totalSeries = Math.max(sets.length, def.sets);
       for(let s=0; s<totalSeries; s++) {
@@ -1344,7 +1360,14 @@ function renderRoutine() {
 
     container.innerHTML = html;
 
-    container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('done')));
+    container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      btn.classList.toggle('done');
+      // Autoguardar al marcar/desmarcar una serie
+      autoGuardarRutina();
+      // Feedback visual breve
+      const wasDone = btn.classList.contains('done');
+      if(wasDone) showToast('Serie ✓ guardada');
+    }));
     container.querySelectorAll('.toggle-ver').forEach(btn=>{
       btn.addEventListener('click',()=>{
         const panel = document.getElementById('svgpanel-'+btn.dataset.idx);
