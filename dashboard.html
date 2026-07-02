@@ -3,371 +3,297 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carvajal Gym — Dashboard</title>
+<title>Carvajal Gym Dashboard</title>
 <style>
-  :root {
-    --bg:#f0f2f5; --card:#fff; --border:#e2e6ea;
-    --text:#1a2332; --text-secondary:#5a6a7a; --text-muted:#9aa5b0;
-    --accent:#1e7fa3; --accent2:#2ecc8a; --accent3:#e07040; --accent4:#7c5cdb;
-    --danger:#e05a4c; --success:#2ecc8a; --radius:16px;
-    --font:'Segoe UI',system-ui,-apple-system,sans-serif;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
-  .header{background:var(--text);color:white;padding:24px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
-  .header h1{font-size:24px;font-weight:800;letter-spacing:-0.5px;}
-  .header h1 span{color:#2389a0;}
-  .header p{font-size:13px;color:#8a96a3;margin-top:2px;}
-  .upload-zone{background:#1e2d3d;border:2px dashed #2389a0;border-radius:10px;padding:12px 20px;cursor:pointer;text-align:center;font-size:13px;color:#8a96a3;transition:all 0.2s;min-width:200px;}
-  .upload-zone:hover{border-color:#4cc4cd;color:#4cc4cd;}
-  .upload-zone.loaded{border-color:var(--success);color:var(--success);}
-  .container{max-width:1200px;margin:0 auto;padding:32px 24px;}
-  .empty-state{text-align:center;padding:80px 20px;color:var(--text-muted);}
-  .empty-state .icon{font-size:64px;margin-bottom:16px;}
-  .empty-state h2{font-size:22px;color:var(--text-secondary);margin-bottom:8px;}
-  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
-  .stat-card{background:var(--card);border-radius:var(--radius);padding:20px 24px;border:1px solid var(--border);}
-  .stat-card .label{font-size:12px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-weight:600;margin-bottom:8px;}
-  .stat-card .value{font-size:32px;font-weight:800;letter-spacing:-1px;}
-  .stat-card .sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
-  .stat-card .delta{font-size:13px;font-weight:600;margin-top:4px;}
-  .delta-up{color:var(--danger);} .delta-down{color:var(--success);}
-  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
-  .card{background:var(--card);border-radius:var(--radius);padding:24px;border:1px solid var(--border);}
-  .card-title{font-size:15px;font-weight:700;margin-bottom:16px;}
-  canvas{width:100%!important;}
-  .table{width:100%;border-collapse:collapse;font-size:13px;}
-  .table th{text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:600;}
-  .table td{padding:10px 12px;border-bottom:1px solid var(--border);}
-  .table tr:last-child td{border-bottom:none;}
-  .table tr:hover td{background:var(--bg);}
-  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
-  .badge-blue{background:#e3f2fd;color:var(--accent);}
-  .badge-green{background:#e8f8f0;color:var(--success);}
-  .progress-bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:6px;}
-  .progress-fill{height:100%;border-radius:4px;}
-  .section-title{font-size:18px;font-weight:800;margin:24px 0 16px;color:var(--text);display:flex;align-items:center;gap:10px;}
-  .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
-  @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}.header{padding:16px 20px;}.container{padding:16px;}}
+:root{--bg:#f0f2f5;--card:#fff;--border:#e2e6ea;--text:#1a2332;--muted:#9aa5b0;--accent:#1e7fa3;--green:#2ecc8a;--orange:#e07040;--purple:#7c5cdb;--red:#e05a4c;--r:16px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;}
+.hdr{background:#1a2332;color:#fff;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.hdr h1{font-size:22px;font-weight:800;} .hdr h1 span{color:#2389a0;}
+.hdr small{color:#8a96a3;display:block;margin-top:2px;font-size:12px;}
+.btn{background:#1e2d3d;border:2px dashed #2389a0;border-radius:10px;padding:10px 18px;cursor:pointer;font-size:13px;color:#8a96a3;display:inline-block;}
+.btn:hover{border-color:#4cc4cd;color:#4cc4cd;}
+.btn.ok{border-color:var(--green);color:var(--green);}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 20px;}
+.empty{text-align:center;padding:80px 20px;color:var(--muted);}
+.empty big{font-size:56px;display:block;margin-bottom:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.card{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--border);}
+.kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;margin-bottom:6px;}
+.kpi .val{font-size:30px;font-weight:800;}
+.kpi .sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.kpi .chg{font-size:12px;font-weight:600;margin-top:3px;}
+.up{color:var(--red);} .dn{color:var(--green);}
+.sec{font-size:17px;font-weight:800;margin:20px 0 12px;display:flex;align-items:center;gap:8px;}
+.sec::after{content:'';flex:1;height:1px;background:var(--border);}
+canvas{width:100%!important;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:7px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;}
+td{padding:9px 10px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg);}
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;}
+.ta{background:#e3f2fd;color:var(--accent);}
+.tg{background:#e8f8f0;color:var(--green);}
+.pb{height:7px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:5px;}
+.pf{height:100%;border-radius:4px;}
+@media(max-width:800px){.grid4{grid-template-columns:1fr 1fr;}.grid2{grid-template-columns:1fr;}.hdr{padding:14px 16px;}.wrap{padding:14px;}}
 </style>
 </head>
 <body>
-<div class="header">
-  <div>
-    <h1>Carvajal <span>Gym</span></h1>
-    <p id="headerSub">Dashboard — carga tu CSV exportado para comenzar</p>
-  </div>
-  <label class="upload-zone" id="uploadZone">
-    📂 Cargar CSV exportado
-    <input type="file" accept=".csv,.txt" id="csvInput" style="display:none;">
-  </label>
+<div class="hdr">
+  <div><h1>Carvajal <span>Gym</span></h1><small id="sub">Dashboard — carga tu CSV para comenzar</small></div>
+  <label class="btn" id="lbl">📂 Cargar CSV<input type="file" id="fi" accept=".csv,.txt" style="display:none"></label>
 </div>
-<div class="container">
-  <div id="emptyState" class="empty-state">
-    <div class="icon">📊</div>
-    <h2>Tu dashboard de progreso</h2>
-    <p>Exporta desde la app Carvajal Gym en tu iPhone<br>y carga el archivo CSV aquí para ver tu análisis completo.</p>
-  </div>
-  <div id="dashboard" style="display:none;"></div>
+<div class="wrap">
+  <div class="empty" id="empty"><big>📊</big><strong>Tu dashboard de progreso</strong><p style="margin-top:8px;font-size:14px;">Exporta desde la app Carvajal Gym → Dashboard → Exportar a Excel<br>Luego carga el archivo CSV aquí.</p></div>
+  <div id="dash" style="display:none"></div>
 </div>
 <script>
-let DATA = null;
+var DATA = null;
 
-document.getElementById('csvInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
+document.getElementById('fi').onchange = function() {
+  var file = this.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev2) {
     try {
-      DATA = parseCSV(ev.target.result);
-      renderDashboard();
-      document.getElementById('uploadZone').classList.add('loaded');
-      document.getElementById('uploadZone').innerHTML = '✓ ' + file.name;
+      var text = ev2.target.result;
+      // Quitar BOM si existe
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      DATA = parseCSV(text);
+      render();
+      document.getElementById('lbl').className = 'btn ok';
+      document.getElementById('lbl').childNodes[0].nodeValue = '✓ ' + file.name;
     } catch(err) {
-      alert('Error al leer el archivo: ' + err.message);
+      alert('Error: ' + err.message);
       console.error(err);
     }
   };
   reader.readAsText(file, 'UTF-8');
-});
+};
 
-function cleanCell(c) {
-  return (c||'').replace(/^"|"$/g,'').trim();
-}
+function clean(c) { return (c||'').replace(/^"|"$/g,'').trim(); }
 
 function parseCSV(text) {
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const parsed = { pesos:[], agua:[], workouts:[], periodo:'' };
-  let section = null;
-  let currentWorkout = null;
-
-  for(const line of lines) {
-    const cells = line.split(',').map(cleanCell);
-    const first = cells[0];
-
-    // Detectar secciones
-    if(first.includes('REPORTE')) continue;
-    if(first.includes('Período:') || first.startsWith('Per')) {
-      parsed.periodo = line.replace(/"/g,'').replace('Período:','').trim();
-      continue;
-    }
-    if(first.includes('PESO CORPORAL')) { section='peso'; continue; }
-    if(first.includes('HIDRATACIÓN') || first.includes('HIDRATACION')) { section='agua'; continue; }
-    if(first.includes('ENTRENAMIENTOS')) { section='workout'; continue; }
-
-    // Saltar encabezados de columna
-    if(first === 'Fecha' || first === 'Ejercicio') continue;
-
-    if(section === 'peso' && first.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      parsed.pesos.push({ date:first, lbs:parseFloat(cells[1])||0, kg:parseFloat(cells[2])||0 });
-      continue;
-    }
-
-    if(section === 'agua' && first.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      parsed.agua.push({ date:first, litros:parseFloat(cells[1])||0 });
-      continue;
-    }
-
-    if(section === 'workout') {
-      // Nueva fecha = nuevo workout
-      if(first.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        currentWorkout = { date:first, trote:null, entries:[] };
-        parsed.workouts.push(currentWorkout);
-        continue;
-      }
-      if(!currentWorkout) continue;
-
-      // Línea de trote
-      if(first === 'Trote') {
-        currentWorkout.trote = {
-          distancia: cells[1]||'', duracion: cells[2]||'', calorias: cells[3]||'', velocidad: cells[4]||''
-        };
-        continue;
-      }
-
-      // Ejercicio con series (tiene al menos una serie con datos)
-      if(first && cells.length > 1 && cells[1] && cells[1] !== 'Serie 1') {
-        const series = cells.slice(1).filter(s=>s && s!=='-' && s.includes('×'));
-        currentWorkout.entries.push({ nombre:first, series });
-        continue;
+  var lines = text.split('\n');
+  var out = { pesos:[], agua:[], workouts:[], periodo:'' };
+  var sec = null, cur = null;
+  for (var i=0; i<lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var cells = line.split(',').map(clean);
+    var f = cells[0];
+    if (f.indexOf('REPORTE') >= 0) continue;
+    if (f.indexOf('Período') >= 0 || f.indexOf('Per') === 0) { out.periodo = line.replace(/"/g,'').replace('Período:','').trim(); continue; }
+    if (f.indexOf('PESO CORPORAL') >= 0) { sec='peso'; continue; }
+    if (f.indexOf('HIDRAT') >= 0) { sec='agua'; continue; }
+    if (f.indexOf('ENTRENA') >= 0) { sec='workout'; continue; }
+    if (f === 'Fecha' || f === 'Ejercicio') continue;
+    if (sec === 'peso' && /^\d{4}-\d{2}-\d{2}$/.test(f)) {
+      out.pesos.push({date:f, lbs:parseFloat(cells[1])||0, kg:parseFloat(cells[2])||0});
+    } else if (sec === 'agua' && /^\d{4}-\d{2}-\d{2}$/.test(f)) {
+      out.agua.push({date:f, litros:parseFloat(cells[1])||0});
+    } else if (sec === 'workout') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(f)) {
+        cur = {date:f, trote:null, entries:[]};
+        out.workouts.push(cur);
+      } else if (cur) {
+        if (f === 'Trote') {
+          cur.trote = {distancia:cells[1]||'', duracion:cells[2]||'', calorias:cells[3]||''};
+        } else if (f && cells.length > 1 && cells[1] && cells[1] !== 'Serie 1') {
+          var series = [];
+          for (var j=1; j<cells.length; j++) {
+            if (cells[j] && cells[j] !== '-' && cells[j].indexOf('\u00d7') >= 0) series.push(cells[j]);
+          }
+          cur.entries.push({nombre:f, series:series});
+        }
       }
     }
   }
-
-  // Consolidar workouts del mismo día
-  const porDia = {};
-  for(const w of parsed.workouts) {
-    if(!porDia[w.date]) porDia[w.date] = { date:w.date, trote:null, entries:[] };
-    if(w.trote) porDia[w.date].trote = w.trote;
-    porDia[w.date].entries.push(...w.entries);
+  // Consolidar por día
+  var byDay = {};
+  for (var k=0; k<out.workouts.length; k++) {
+    var w = out.workouts[k];
+    if (!byDay[w.date]) byDay[w.date] = {date:w.date, trote:null, entries:[]};
+    if (w.trote) byDay[w.date].trote = w.trote;
+    for (var m=0; m<w.entries.length; m++) byDay[w.date].entries.push(w.entries[m]);
   }
-  parsed.workouts = Object.values(porDia).sort((a,b)=>a.date.localeCompare(b.date));
-
-  return parsed;
+  out.workouts = Object.values(byDay).sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  return out;
 }
 
-function renderDashboard() {
-  document.getElementById('emptyState').style.display = 'none';
-  const dash = document.getElementById('dashboard');
+function fdate(d) {
+  if (!d || !/\d{4}-\d{2}-\d{2}/.test(d)) return d||'';
+  var dt = new Date(d+'T00:00:00');
+  var m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var ds = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  return ds[dt.getDay()]+' '+dt.getDate()+' '+m[dt.getMonth()];
+}
+
+function bestPeso(series) {
+  var best = 0;
+  for (var i=0; i<series.length; i++) {
+    var m = series[i].match(/(\d+\.?\d*)lb/);
+    if (m) best = Math.max(best, parseFloat(m[1]));
+  }
+  return best;
+}
+
+function getEjResumen() {
+  var map = {};
+  for (var i=0; i<DATA.workouts.length; i++) {
+    var w = DATA.workouts[i];
+    for (var j=0; j<w.entries.length; j++) {
+      var e = w.entries[j];
+      if (!map[e.nombre]) map[e.nombre] = {nombre:e.nombre, total:0, mejor:0};
+      map[e.nombre].total += e.series.length;
+      var bp = bestPeso(e.series);
+      if (bp > map[e.nombre].mejor) map[e.nombre].mejor = bp;
+    }
+  }
+  return Object.values(map).sort(function(a,b){ return b.total-a.total; });
+}
+
+function render() {
+  document.getElementById('empty').style.display = 'none';
+  var dash = document.getElementById('dash');
   dash.style.display = 'block';
-  const { pesos, agua, workouts, periodo } = DATA;
-  document.getElementById('headerSub').textContent = `Período: ${periodo}`;
+  var P = DATA.pesos, A = DATA.agua, W = DATA.workouts;
+  document.getElementById('sub').textContent = 'Período: ' + DATA.periodo;
 
-  const pesoInicio = pesos.length > 0 ? pesos[0].lbs : null;
-  const pesoFin = pesos.length > 0 ? pesos[pesos.length-1].lbs : null;
-  const deltaPeso = pesoInicio && pesoFin ? (pesoFin-pesoInicio).toFixed(1) : null;
-  const avgAgua = agua.length > 0 ? (agua.reduce((a,b)=>a+b.litros,0)/agua.length).toFixed(1) : '—';
-  const totalMi = workouts.reduce((a,w)=>a+(w.trote?parseFloat(w.trote.distancia)||0:0),0).toFixed(1);
-  const diasEntrenados = workouts.filter(w=>w.entries.length>0).length;
-  const ejerciciosResumen = getEjerciciosResumen();
+  var pesoFin = P.length ? P[P.length-1].lbs : null;
+  var pesoIni = P.length ? P[0].lbs : null;
+  var delta = (pesoFin && pesoIni) ? (pesoFin-pesoIni).toFixed(1) : null;
+  var avgAgua = A.length ? (A.reduce(function(a,b){return a+b.litros;},0)/A.length).toFixed(1) : '—';
+  var totalMi = 0;
+  for (var i=0; i<W.length; i++) if (W[i].trote) totalMi += parseFloat(W[i].trote.distancia)||0;
+  totalMi = totalMi.toFixed(1);
+  var diasEnt = W.filter(function(w){return w.entries.length>0;}).length;
+  var ejRes = getEjResumen();
 
-  dash.innerHTML = `
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="label">Peso actual</div>
-        <div class="value" style="color:var(--accent)">${pesoFin?pesoFin+' lb':'—'}</div>
-        ${deltaPeso?`<div class="delta ${parseFloat(deltaPeso)<=0?'delta-down':'delta-up'}">${parseFloat(deltaPeso)>0?'↑':'↓'} ${Math.abs(deltaPeso)} lb</div>`:''}
-        <div class="sub">${pesoFin?(pesoFin/2.20462).toFixed(1)+' kg':''}</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Días entrenados</div>
-        <div class="value" style="color:var(--accent2)">${diasEntrenados}</div>
-        <div class="sub">${workouts.length} días en el período</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Millas corridas</div>
-        <div class="value" style="color:var(--accent3)">${totalMi}</div>
-        <div class="sub">${(parseFloat(totalMi)*1.60934).toFixed(1)} km totales</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Agua promedio</div>
-        <div class="value" style="color:var(--accent4)">${avgAgua}L</div>
-        <div class="sub">Meta: 2.5L diarios</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,parseFloat(avgAgua)/2.5*100)}%;background:var(--accent4);"></div></div>
-      </div>
-    </div>
+  var deltaHtml = delta ? '<div class="chg '+(parseFloat(delta)<=0?'dn':'up')+'">'+(parseFloat(delta)>0?'↑':'↓')+' '+Math.abs(delta)+' lb</div>' : '';
 
-    <div class="section-title">📈 Evolución</div>
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">⚖️ Peso corporal (lb)</div>
-        <canvas id="pesoChart" height="200"></canvas>
-      </div>
-      <div class="card">
-        <div class="card-title">💧 Agua diaria (L)</div>
-        <canvas id="aguaChart" height="200"></canvas>
-      </div>
-    </div>
+  var sessHtml = W.map(function(w) {
+    return '<tr><td><strong>'+fdate(w.date)+'</strong></td><td>'+(w.entries.length>0?'<span class="tag ta">'+w.entries.length+' ejerc.</span>':'—')+'</td><td>'+(w.trote?'<span class="tag tg">'+w.trote.distancia+'</span>':'—')+'</td></tr>';
+  }).join('');
 
-    <div class="section-title">💪 Ejercicios</div>
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">📅 Sesiones</div>
-        <table class="table">
-          <thead><tr><th>Fecha</th><th>Ejercicios</th><th>Trote</th></tr></thead>
-          <tbody>${workouts.map(w=>`<tr>
-            <td><strong>${formatFecha(w.date)}</strong></td>
-            <td>${w.entries.length>0?`<span class="badge badge-blue">${w.entries.length}</span>`:'—'}</td>
-            <td>${w.trote?`<span class="badge badge-green">${w.trote.distancia}</span>`:'—'}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-      <div class="card">
-        <div class="card-title">🏋️ Progreso por ejercicio</div>
-        <table class="table">
-          <thead><tr><th>Ejercicio</th><th>Series</th><th>Mejor peso</th></tr></thead>
-          <tbody>${ejerciciosResumen.slice(0,12).map(e=>`<tr>
-            <td>${e.nombre}</td>
-            <td><span class="badge badge-blue">${e.totalSeries}</span></td>
-            <td><strong>${e.mejorPeso>0?e.mejorPeso+'lb':'—'}</strong></td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div>
+  var ejHtml = ejRes.slice(0,12).map(function(e) {
+    return '<tr><td>'+e.nombre+'</td><td><span class="tag ta">'+e.total+'</span></td><td><strong>'+(e.mejor>0?e.mejor+'lb':'—')+'</strong></td></tr>';
+  }).join('');
 
-    <div class="section-title">📋 Historial de peso</div>
-    <div class="card">
-      <table class="table">
-        <thead><tr><th>Fecha</th><th>Libras</th><th>Kilos</th><th>Cambio</th></tr></thead>
-        <tbody>${pesos.map((p,i)=>{
-          const prev=i>0?pesos[i-1].lbs:null;
-          const diff=prev?(p.lbs-prev).toFixed(1):null;
-          const deltaHtml = diff ? `<span class="${parseFloat(diff)<=0?'delta-down':'delta-up'}">${parseFloat(diff)>0?'+':''}${diff} lb</span>` : '—';
-          return `<tr><td>${formatFecha(p.date)}</td><td><strong>${p.lbs} lb</strong></td><td>${p.kg} kg</td><td>${deltaHtml}</td></tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>
-  `;
+  var pesoHtml = P.map(function(p,i) {
+    var prev = i>0?P[i-1].lbs:null;
+    var df = prev?(p.lbs-prev).toFixed(1):null;
+    var chg = df ? '<span class="'+(parseFloat(df)<=0?'dn':'up')+'">'+(parseFloat(df)>0?'+':'')+df+' lb</span>' : '—';
+    return '<tr><td>'+fdate(p.date)+'</td><td><strong>'+p.lbs+' lb</strong></td><td>'+p.kg+' kg</td><td>'+chg+'</td></tr>';
+  }).join('');
 
-  setTimeout(()=>{
-    drawLine('pesoChart', pesos.map(p=>({x:p.date,y:p.lbs})), 'lb', '#1e7fa3');
-    drawBars('aguaChart', agua.map(a=>({x:a.date,y:a.litros})), 'L', '#7c5cdb', 2.5);
-  }, 100);
-}
+  var aguaPct = Math.min(100, parseFloat(avgAgua)/2.5*100);
 
-function getEjerciciosResumen() {
-  const map = {};
-  DATA.workouts.forEach(w=>{
-    w.entries.forEach(e=>{
-      if(!map[e.nombre]) map[e.nombre]={nombre:e.nombre,totalSeries:0,mejorPeso:0};
-      map[e.nombre].totalSeries += e.series.length;
-      e.series.forEach(s=>{
-        const m=s.match(/(\d+\.?\d*)lb/);
-        if(m) map[e.nombre].mejorPeso=Math.max(map[e.nombre].mejorPeso,parseFloat(m[1]));
-      });
-    });
-  });
-  return Object.values(map).sort((a,b)=>b.totalSeries-a.totalSeries);
-}
+  dash.innerHTML = '<div class="grid4">'
+    +'<div class="card kpi"><div class="lbl">Peso actual</div><div class="val" style="color:var(--accent)">'+(pesoFin?pesoFin+' lb':'—')+'</div>'+deltaHtml+'<div class="sub">'+(pesoFin?(pesoFin/2.20462).toFixed(1)+' kg':'')+'</div></div>'
+    +'<div class="card kpi"><div class="lbl">Días entrenados</div><div class="val" style="color:var(--green)">'+diasEnt+'</div><div class="sub">'+W.length+' días en el período</div></div>'
+    +'<div class="card kpi"><div class="lbl">Millas corridas</div><div class="val" style="color:var(--orange)">'+totalMi+'</div><div class="sub">'+(parseFloat(totalMi)*1.60934).toFixed(1)+' km totales</div></div>'
+    +'<div class="card kpi"><div class="lbl">Agua promedio</div><div class="val" style="color:var(--purple)">'+avgAgua+'L</div><div class="sub">Meta: 2.5L diarios</div><div class="pb"><div class="pf" style="width:'+aguaPct+'%;background:var(--purple);"></div></div></div>'
+    +'</div>'
+    +'<div class="sec">📈 Evolución</div>'
+    +'<div class="grid2"><div class="card"><div style="font-size:14px;font-weight:700;margin-bottom:12px;">⚖️ Peso corporal (lb)</div><canvas id="pc" height="200"></canvas></div>'
+    +'<div class="card"><div style="font-size:14px;font-weight:700;margin-bottom:12px;">💧 Hidratación diaria (L)</div><canvas id="ac" height="200"></canvas></div></div>'
+    +'<div class="sec">💪 Entrenamientos</div>'
+    +'<div class="grid2">'
+    +'<div class="card"><div style="font-size:14px;font-weight:700;margin-bottom:12px;">📅 Sesiones</div><table><thead><tr><th>Fecha</th><th>Ejercicios</th><th>Trote</th></tr></thead><tbody>'+sessHtml+'</tbody></table></div>'
+    +'<div class="card"><div style="font-size:14px;font-weight:700;margin-bottom:12px;">🏋️ Ejercicios</div><table><thead><tr><th>Ejercicio</th><th>Series</th><th>Mejor peso</th></tr></thead><tbody>'+ejHtml+'</tbody></table></div>'
+    +'</div>'
+    +'<div class="sec">📋 Historial de peso</div>'
+    +'<div class="card"><table><thead><tr><th>Fecha</th><th>Libras</th><th>Kilos</th><th>Cambio</th></tr></thead><tbody>'+pesoHtml+'</tbody></table></div>';
 
-function formatFecha(d) {
-  if(!d||!d.match(/\d{4}-\d{2}-\d{2}/)) return d||'';
-  const dt=new Date(d+'T00:00:00');
-  const m=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const ds=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  return `${ds[dt.getDay()]} ${dt.getDate()} ${m[dt.getMonth()]}`;
+  setTimeout(function() {
+    drawLine('pc', P.map(function(p){return {x:p.date,y:p.lbs};}), 'lb', '#1e7fa3');
+    drawBars('ac', A.map(function(a){return {x:a.date,y:a.litros};}), 'L', '#7c5cdb', 2.5);
+  }, 150);
 }
 
 function drawLine(id, data, unit, color) {
-  const canvas=document.getElementById(id);
-  if(!canvas||data.length<2) return;
-  const ctx=canvas.getContext('2d');
-  const dpr=window.devicePixelRatio||1;
-  const W=canvas.offsetWidth; const H=200;
-  canvas.width=W*dpr; canvas.height=H*dpr; ctx.scale(dpr,dpr);
-  ctx.clearRect(0,0,W,H);
-  const vals=data.map(d=>d.y);
-  const minV=Math.min(...vals)-0.5, maxV=Math.max(...vals)+0.5, range=maxV-minV||1;
-  const pL=50,pR=16,pT=16,pB=30,cW=W-pL-pR,cH=H-pT-pB;
+  var canvas = document.getElementById(id);
+  if (!canvas || data.length < 2) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio||1;
+  var W2 = canvas.offsetWidth, H = 200;
+  canvas.width = W2*dpr; canvas.height = H*dpr; ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W2,H);
+  var vals = data.map(function(d){return d.y;});
+  var minV = Math.min.apply(null,vals)-0.5, maxV = Math.max.apply(null,vals)+0.5, range = maxV-minV||1;
+  var pL=50,pR=16,pT=16,pB=28,cW=W2-pL-pR,cH=H-pT-pB;
   ctx.strokeStyle='#e2e6ea'; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){
-    const y=pT+(cH/4)*i;
-    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+  for (var i=0;i<=4;i++) {
+    var y=pT+(cH/4)*i;
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W2-pR,y); ctx.stroke();
     ctx.fillStyle='#9aa5b0'; ctx.font='11px sans-serif'; ctx.textAlign='right';
     ctx.fillText((maxV-(range/4)*i).toFixed(1)+unit,pL-4,y+4);
   }
-  const grad=ctx.createLinearGradient(0,pT,0,pT+cH);
+  var grad=ctx.createLinearGradient(0,pT,0,pT+cH);
   grad.addColorStop(0,color+'33'); grad.addColorStop(1,color+'05');
   ctx.beginPath();
-  data.forEach((d,i)=>{
-    const x=pL+(cW/(data.length-1))*i,y=pT+cH-((d.y-minV)/range)*cH;
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  });
+  for (var i=0;i<data.length;i++) {
+    var x=pL+(cW/(data.length-1))*i, y2=pT+cH-((data[i].y-minV)/range)*cH;
+    if(i===0) ctx.moveTo(x,y2); else ctx.lineTo(x,y2);
+  }
   ctx.lineTo(pL+(cW/(data.length-1))*(data.length-1),pT+cH);
   ctx.lineTo(pL,pT+cH); ctx.closePath();
   ctx.fillStyle=grad; ctx.fill();
   ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.5;
-  data.forEach((d,i)=>{
-    const x=pL+(cW/(data.length-1))*i,y=pT+cH-((d.y-minV)/range)*cH;
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  }); ctx.stroke();
-  data.forEach((d,i)=>{
-    const x=pL+(cW/(data.length-1))*i,y=pT+cH-((d.y-minV)/range)*cH;
-    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+  for (var i=0;i<data.length;i++) {
+    var x=pL+(cW/(data.length-1))*i, y2=pT+cH-((data[i].y-minV)/range)*cH;
+    if(i===0) ctx.moveTo(x,y2); else ctx.lineTo(x,y2);
+  }
+  ctx.stroke();
+  for (var i=0;i<data.length;i++) {
+    var x=pL+(cW/(data.length-1))*i, y2=pT+cH-((data[i].y-minV)/range)*cH;
+    ctx.beginPath(); ctx.arc(x,y2,4,0,Math.PI*2);
     ctx.fillStyle='white'; ctx.fill();
     ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
-  });
+  }
   ctx.fillStyle='#9aa5b0'; ctx.font='11px sans-serif';
-  ctx.textAlign='left'; ctx.fillText(formatFecha(data[0].x),pL,H-6);
-  ctx.textAlign='right'; ctx.fillText(formatFecha(data[data.length-1].x),W-pR,H-6);
+  ctx.textAlign='left'; ctx.fillText(fdate(data[0].x),pL,H-4);
+  ctx.textAlign='right'; ctx.fillText(fdate(data[data.length-1].x),W2-pR,H-4);
 }
 
 function drawBars(id, data, unit, color, meta) {
-  const canvas=document.getElementById(id);
-  if(!canvas||data.length===0) return;
-  const ctx=canvas.getContext('2d');
-  const dpr=window.devicePixelRatio||1;
-  const W=canvas.offsetWidth; const H=200;
-  canvas.width=W*dpr; canvas.height=H*dpr; ctx.scale(dpr,dpr);
-  ctx.clearRect(0,0,W,H);
-  const maxV=Math.max(meta||0,...data.map(d=>d.y))*1.15||1;
-  const pL=10,pR=10,pT=20,pB=24,cW=W-pL-pR,cH=H-pT-pB;
-  const barW=Math.max(8,(cW/data.length)-6);
-  if(meta>0){
-    const my=pT+cH-((meta/maxV)*cH);
+  var canvas = document.getElementById(id);
+  if (!canvas || data.length===0) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio||1;
+  var W2 = canvas.offsetWidth, H = 200;
+  canvas.width = W2*dpr; canvas.height = H*dpr; ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W2,H);
+  var maxV = Math.max.apply(null,[meta||0].concat(data.map(function(d){return d.y;})))*1.15||1;
+  var pL=10,pR=10,pT=20,pB=24,cW=W2-pL-pR,cH=H-pT-pB;
+  var barW = Math.max(8,(cW/data.length)-6);
+  if (meta>0) {
+    var my=pT+cH-((meta/maxV)*cH);
     ctx.strokeStyle=color+'66'; ctx.lineWidth=1; ctx.setLineDash([5,4]);
-    ctx.beginPath(); ctx.moveTo(pL,my); ctx.lineTo(W-pR,my); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pL,my); ctx.lineTo(W2-pR,my); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle=color; ctx.font='10px sans-serif'; ctx.textAlign='right';
-    ctx.fillText(`Meta ${meta}${unit}`,W-pR-2,my-4);
+    ctx.fillText('Meta '+meta+unit,W2-pR-2,my-4);
   }
-  data.forEach((d,i)=>{
-    const x=pL+(cW/data.length)*i+(cW/data.length-barW)/2;
-    const barH=(d.y/maxV)*cH; const y=pT+cH-barH;
-    const pct=meta>0?d.y/meta:1;
-    const c=meta>0?(pct>=1?'#2ecc8a':pct>=0.6?color:'#e05a4c'):color;
+  for (var i=0;i<data.length;i++) {
+    var x=pL+(cW/data.length)*i+(cW/data.length-barW)/2;
+    var barH=(data[i].y/maxV)*cH, y=pT+cH-barH;
+    var pct=meta>0?data[i].y/meta:1;
+    var c=meta>0?(pct>=1?'#2ecc8a':pct>=0.6?color:'#e05a4c'):color;
     ctx.fillStyle=c+'cc';
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(x,y,barW,barH,4);else ctx.rect(x,y,barW,barH);
-    ctx.fill();
-    if(d.y>0){
+    ctx.fillRect(x,y,barW,barH);
+    if (data[i].y>0) {
       ctx.fillStyle='#5a6a7a'; ctx.font='10px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(d.y%1===0?d.y:d.y.toFixed(1),x+barW/2,y-4);
+      ctx.fillText(data[i].y%1===0?data[i].y:data[i].y.toFixed(1),x+barW/2,y-4);
     }
-  });
+  }
   ctx.fillStyle='#9aa5b0'; ctx.font='10px sans-serif';
-  ctx.textAlign='left'; ctx.fillText(formatFecha(data[0].x),pL,H-4);
-  ctx.textAlign='right'; ctx.fillText(formatFecha(data[data.length-1].x),W-pR,H-4);
+  ctx.textAlign='left'; ctx.fillText(fdate(data[0].x),pL,H-4);
+  ctx.textAlign='right'; ctx.fillText(fdate(data[data.length-1].x),W2-pR,H-4);
 }
 </script>
 </body>
