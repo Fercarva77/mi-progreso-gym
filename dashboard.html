@@ -251,13 +251,9 @@ function renderDashboard() {
         <thead><tr><th>Fecha</th><th>Libras</th><th>Kilos</th><th>Cambio</th></tr></thead>
         <tbody>${pesos.map((p,i)=>{
           const prev=i>0?pesos[i-1].lbs:null;
-          const d=prev?(p.lbs-prev).toFixed(1):null;
-          return `<tr>
-            <td>${formatFecha(p.date)}</td>
-            <td><strong>${p.lbs} lb</strong></td>
-            <td>${p.kg} kg</td>
-            <td>${d?`<span class="${parseFloat(d)<=0?'delta-down':'delta-up'}">${parseFloat(d)>0?'+':''}${d} lb</span>`:'—'}</td>
-          </tr>`;
+          const diff=prev?(p.lbs-prev).toFixed(1):null;
+          const deltaHtml = diff ? `<span class="${parseFloat(diff)<=0?'delta-down':'delta-up'}">${parseFloat(diff)>0?'+':''}${diff} lb</span>` : '—';
+          return `<tr><td>${formatFecha(p.date)}</td><td><strong>${p.lbs} lb</strong></td><td>${p.kg} kg</td><td>${deltaHtml}</td></tr>`;
         }).join('')}</tbody>
       </table>
     </div>
