@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Carvajal</title>
+<title>Carvajal Gym</title>
+<meta name="apple-mobile-web-app-title" content="Carvajal">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj4KICA8cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMGEwZjE0Ii8+CiAgPHRleHQgeD0iOTAiIHk9IjEyNSIgZm9udC1mYW1pbHk9InN5c3RlbS11aSwtYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMjM4OWEwIj5DPC90ZXh0PgogIDx0ZXh0IHg9IjkwIiB5PSIxNTgiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNWI2YjdhIj5HWU08L3RleHQ+Cjwvc3ZnPg==">
 <style>
   :root {
     --bg: #f5f7fa; --card: #ffffff; --card2: #f0f3f7; --border: #dde3ea;
@@ -105,7 +107,7 @@
   <div class="tabs">
     <div class="tab active" data-view="rutina">Rutina</div>
     <div class="tab" data-view="dashboard">Dashboard</div>
-    <div class="tab" data-view="peso">Peso</div>
+    <div class="tab" data-view="nutricion">Nutrición</div>
     <div class="tab" data-view="biblioteca">Ejercicios</div>
     <div class="tab" data-view="editar">Editar</div>
   </div>
@@ -288,10 +290,94 @@
     </div>
   </div>
 </div>
+  <div class="view" id="view-nutricion">
+    <!-- RESUMEN DEL DÍA -->
+    <div class="card">
+      <div class="card-title">Nutrición de hoy <span class="label" id="nutriFecha"></span></div>
+      <div style="display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:120px; text-align:center;">
+          <div style="font-size:32px; font-weight:800; color:var(--accent);" id="nutriProtTotal">0</div>
+          <div style="font-size:11px; color:var(--text-secondary);">/ <span id="nutriProtMeta">180</span>g proteína</div>
+          <div class="progress-bar" style="margin-top:6px;"><div id="nutriProtBar" style="height:100%; border-radius:10px; background:var(--accent); width:0%; transition:width 0.3s;"></div></div>
+        </div>
+        <div style="flex:1; min-width:80px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:var(--warning);" id="nutriCalTotal">0</div>
+          <div style="font-size:11px; color:var(--text-secondary);">calorías</div>
+        </div>
+        <div style="flex:1; min-width:80px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:var(--accent2);" id="nutriCarbTotal">0</div>
+          <div style="font-size:11px; color:var(--text-secondary);">g carbos</div>
+        </div>
+        <div style="flex:1; min-width:80px; text-align:center;">
+          <div style="font-size:24px; font-weight:700; color:var(--danger);" id="nutriGrasaTotal">0</div>
+          <div style="font-size:11px; color:var(--text-secondary);">g grasa</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGREGAR ALIMENTO -->
+    <div class="card">
+      <div class="card-title">Agregar alimento</div>
+      <div class="row">
+        <select id="nutriComida">
+          <option value="desayuno">🌅 Desayuno</option>
+          <option value="snack1">🍎 Snack mañana</option>
+          <option value="almuerzo" selected>☀️ Almuerzo</option>
+          <option value="snack2">🥜 Snack tarde</option>
+          <option value="cena">🌙 Cena</option>
+          <option value="suplemento">💊 Suplemento</option>
+        </select>
+      </div>
+      <div class="row">
+        <select id="nutriAlimento" style="flex:2;"></select>
+        <input type="number" id="nutriGramos" placeholder="Gramos" inputmode="decimal" style="flex:1;" value="100">
+      </div>
+      <div id="nutriPreview" style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; min-height:18px;"></div>
+      <button class="btn-primary" id="nutriAgregarBtn">+ Agregar</button>
+    </div>
+
+    <!-- COMIDAS DEL DÍA -->
+    <div class="card">
+      <div class="card-title">Comidas de hoy</div>
+      <div id="nutriLista"></div>
+    </div>
+
+    <!-- BUSCAR ALIMENTO PERSONALIZADO -->
+    <div class="card">
+      <div class="card-title">Agregar alimento nuevo <span class="label">no está en la lista</span></div>
+      <div class="row">
+        <input type="text" id="nuevoAlimNombre" placeholder="Nombre (ej. Proteína en polvo)">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+        <input type="number" id="nuevoAlimProt" placeholder="Proteína (g)" inputmode="decimal">
+        <input type="number" id="nuevoAlimCal" placeholder="Calorías" inputmode="decimal">
+        <input type="number" id="nuevoAlimCarb" placeholder="Carbos (g)" inputmode="decimal">
+        <input type="number" id="nuevoAlimGrasa" placeholder="Grasa (g)" inputmode="decimal">
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Valores por 100g</div>
+      <select id="nuevoAlimCat" style="margin-bottom:10px;">
+        <option value="carnes">Carnes y pescados</option>
+        <option value="lacteos">Lácteos y huevos</option>
+        <option value="cereales">Cereales y legumbres</option>
+        <option value="verduras">Verduras</option>
+        <option value="frutas">Frutas</option>
+        <option value="suplementos">Suplementos</option>
+        <option value="otros">Otros</option>
+      </select>
+      <button class="btn-primary" id="nuevoAlimBtn">Guardar alimento</button>
+    </div>
+
+    <!-- HISTORIAL SEMANAL -->
+    <div class="card">
+      <div class="card-title">Esta semana</div>
+      <div id="nutriHistorial"></div>
+    </div>
+  </div>
+
 <div class="bottom-nav">
   <div class="nav-item active" data-view="rutina"><span class="nav-icon">&#127947;</span>Rutina</div>
   <div class="nav-item" data-view="dashboard"><span class="nav-icon">&#128200;</span>Dashboard</div>
-  <div class="nav-item" data-view="peso"><span class="nav-icon">&#9878;</span>Peso</div>
+  <div class="nav-item" data-view="nutricion"><span class="nav-icon">&#127829;</span>Nutrición</div>
   <div class="nav-item" data-view="biblioteca"><span class="nav-icon">&#128218;</span>Ejerc.</div>
   <div class="nav-item" data-view="editar"><span class="nav-icon">&#9881;</span>Editar</div>
 </div>
@@ -1237,6 +1323,7 @@ function setView(view) {
   if(view==='peso') renderPesoView();
   if(view==='progreso') renderProgresoView();
   if(view==='dashboard') renderDashboard();
+  if(view==='nutricion') renderNutricion();
   if(view==='editar') renderEditorView();
   if(view==='biblioteca') loadAllImages().then(() => renderBibliotecaGrupos());
   if(view==='rutina') loadAllImages().then(() => renderRoutine());
@@ -2370,7 +2457,317 @@ function exportarExcel() {
   showToast('Exportado ✓');
 }
 
+// ===== NUTRICIÓN =====
+const NUTRI_KEY = 'carvajalNutri_v1';
+const NUTRI_META_KEY = 'carvajalNutriMeta_v1';
 
+// Banco de alimentos: [nombre, proteína, calorías, carbos, grasa] por 100g
+const BANCO_ALIMENTOS = {
+  "carnes": [
+    ["Pechuga de pollo cocida", 31, 165, 0, 3.6],
+    ["Pechuga de pollo cruda", 23, 120, 0, 2.6],
+    ["Muslo de pollo sin piel", 26, 177, 0, 8.7],
+    ["Atún en agua (escurrido)", 29, 128, 0, 1],
+    ["Atún en aceite (escurrido)", 27, 198, 0, 9],
+    ["Salmón cocido", 25, 206, 0, 13],
+    ["Tilapia cocida", 26, 128, 0, 2.7],
+    ["Carne molida 90% magra", 26, 196, 0, 11],
+    ["Carne molida 80%", 25, 254, 0, 17],
+    ["Bistec de res magro", 28, 179, 0, 7],
+    ["Pavo molido", 27, 170, 0, 7],
+    ["Pechuga de pavo", 29, 135, 0, 1],
+    ["Camarones cocidos", 24, 99, 0.9, 1.1],
+    ["Sardinas en lata", 25, 208, 0, 11],
+    ["Bacalao cocido", 23, 105, 0, 0.9],
+  ],
+  "lacteos": [
+    ["Huevo entero", 13, 155, 1.1, 11],
+    ["Clara de huevo", 11, 52, 0.7, 0.2],
+    ["Leche entera", 3.4, 61, 4.8, 3.3],
+    ["Leche descremada", 3.4, 34, 5, 0.1],
+    ["Yogur griego natural", 10, 59, 3.6, 0.4],
+    ["Yogur griego proteico (Oikos Pro)", 15, 73, 4, 0],
+    ["Yogur regular natural", 4, 61, 7, 3.3],
+    ["Queso cottage", 11, 98, 3.4, 4.3],
+    ["Queso amarillo (americano)", 16, 371, 2.5, 30],
+    ["Queso mozzarella", 22, 280, 2.2, 17],
+    ["Queso cheddar", 25, 402, 1.3, 33],
+    ["Queso ricotta", 11, 174, 3, 13],
+    ["Leche de almendras sin azúcar", 1.5, 17, 0.6, 1.5],
+    ["Queso parmesano rallado", 38, 431, 4, 29],
+    ["Kefir", 4, 61, 4.8, 3.3],
+  ],
+  "cereales": [
+    ["Arroz blanco cocido", 2.7, 130, 28, 0.3],
+    ["Arroz integral cocido", 2.6, 111, 23, 0.9],
+    ["Quinua cocida", 4.4, 120, 21, 1.9],
+    ["Avena seca", 16.9, 389, 66, 6.9],
+    ["Pan integral", 8, 247, 41, 3.4],
+    ["Pan blanco", 7.7, 265, 49, 3.2],
+    ["Pasta cocida", 5, 158, 31, 0.9],
+    ["Camote/batata cocido", 1.6, 90, 21, 0.1],
+    ["Papa cocida", 1.9, 87, 20, 0.1],
+    ["Lentejas cocidas", 9, 116, 20, 0.4],
+    ["Frijoles/porotos negros cocidos", 8.9, 132, 24, 0.5],
+    ["Garbanzos cocidos", 8.9, 164, 27, 2.6],
+    ["Maíz cocido", 3.4, 96, 21, 1.5],
+    ["Tortilla de maíz", 5.7, 218, 46, 2.7],
+    ["Granola", 10, 471, 64, 20],
+  ],
+  "verduras": [
+    ["Brócoli cocido", 2.8, 35, 7, 0.4],
+    ["Espinaca cocida", 3, 23, 3.8, 0.4],
+    ["Lechuga romana", 1.4, 17, 3.3, 0.3],
+    ["Tomate", 0.9, 18, 3.9, 0.2],
+    ["Zanahoria", 0.9, 41, 10, 0.2],
+    ["Pepino", 0.7, 16, 3.6, 0.1],
+    ["Cebolla", 1.1, 40, 9.3, 0.1],
+    ["Ajo", 6.4, 149, 33, 0.5],
+    ["Pimiento verde", 0.9, 20, 4.6, 0.2],
+    ["Pimiento rojo", 1, 31, 7.2, 0.3],
+    ["Aguacate/palta", 2, 160, 9, 15],
+    ["Champiñones cocidos", 3.5, 28, 5.3, 0.5],
+    ["Apio", 0.7, 16, 3, 0.2],
+    ["Col/repollo", 1.3, 25, 6, 0.1],
+    ["Coliflor cocida", 1.9, 25, 5, 0.3],
+  ],
+  "frutas": [
+    ["Manzana", 0.3, 52, 14, 0.2],
+    ["Banana/plátano", 1.1, 89, 23, 0.3],
+    ["Naranja", 0.9, 47, 12, 0.1],
+    ["Fresas", 0.8, 32, 7.7, 0.3],
+    ["Arándanos", 0.7, 57, 14, 0.3],
+    ["Uvas", 0.7, 67, 17, 0.4],
+    ["Sandía", 0.6, 30, 7.6, 0.2],
+    ["Mango", 0.8, 60, 15, 0.4],
+    ["Piña", 0.5, 50, 13, 0.1],
+    ["Papaya", 0.5, 43, 11, 0.3],
+  ],
+  "suplementos": [
+    ["Proteína whey (genérico)", 75, 370, 8, 4],
+    ["Proteína whey isolada", 90, 360, 3, 1],
+    ["Creatina monohidrato", 0, 0, 0, 0],
+    ["Caseína en polvo", 80, 370, 4, 2],
+    ["Proteína vegana (guisante)", 70, 360, 10, 6],
+    ["BCAA en polvo", 50, 200, 0, 0],
+    ["Barra proteica (promedio)", 20, 200, 20, 5],
+  ],
+  "otros": [
+    ["Aceite de oliva", 0, 884, 0, 100],
+    ["Aceite vegetal", 0, 884, 0, 100],
+    ["Mantequilla de maní", 25, 588, 20, 50],
+    ["Almendras", 21, 579, 22, 50],
+    ["Nueces", 15, 654, 14, 65],
+    ["Semillas de chía", 17, 486, 42, 31],
+    ["Miel", 0.3, 304, 82, 0],
+    ["Salsa de soya", 8.1, 53, 4.9, 0.6],
+    ["Mayonesa", 1.1, 680, 0.6, 75],
+    ["Ketchup", 1.7, 101, 26, 0.1],
+  ]
+};
+
+function loadNutri() {
+  try { const r=localStorage.getItem(NUTRI_KEY); if(r) return JSON.parse(r); } catch(e){}
+  return {};
+}
+function saveNutri(d) { localStorage.setItem(NUTRI_KEY, JSON.stringify(d)); }
+function loadNutriMeta() {
+  try { const r=localStorage.getItem(NUTRI_META_KEY); if(r) return JSON.parse(r); } catch(e){}
+  return { protMeta:180, calMeta:2500, alimentosCustom:[] };
+}
+function saveNutriMeta(d) { localStorage.setItem(NUTRI_META_KEY, JSON.stringify(d)); }
+
+let NUTRI = loadNutri();
+let NUTRI_META = loadNutriMeta();
+
+function getAllAlimentos() {
+  const lista = [];
+  for(const cat in BANCO_ALIMENTOS) {
+    BANCO_ALIMENTOS[cat].forEach(a => lista.push({nombre:a[0], prot:a[1], cal:a[2], carb:a[3], grasa:a[4], cat}));
+  }
+  NUTRI_META.alimentosCustom.forEach(a => lista.push(a));
+  return lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+}
+
+function getNutriHoy() { return NUTRI[todayStr()] || {desayuno:[], snack1:[], almuerzo:[], snack2:[], cena:[], suplemento:[]}; }
+
+function calcTotales(dia) {
+  const comidas = ['desayuno','snack1','almuerzo','snack2','cena','suplemento'];
+  let prot=0, cal=0, carb=0, grasa=0;
+  comidas.forEach(c => {
+    (dia[c]||[]).forEach(item => {
+      const factor = item.gramos/100;
+      prot += (item.prot||0)*factor;
+      cal += (item.cal||0)*factor;
+      carb += (item.carb||0)*factor;
+      grasa += (item.grasa||0)*factor;
+    });
+  });
+  return {prot:Math.round(prot), cal:Math.round(cal), carb:Math.round(carb), grasa:Math.round(grasa)};
+}
+
+function renderNutricion() {
+  // Fecha
+  const d = new Date();
+  const dias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  document.getElementById('nutriFecha').textContent = dias[d.getDay()];
+  document.getElementById('nutriProtMeta').textContent = NUTRI_META.protMeta;
+
+  // Poblar select de alimentos
+  const sel = document.getElementById('nutriAlimento');
+  const todos = getAllAlimentos();
+  const cats = {carnes:'🥩 Carnes y pescados', lacteos:'🥛 Lácteos y huevos', cereales:'🌾 Cereales y legumbres', verduras:'🥦 Verduras', frutas:'🍎 Frutas', suplementos:'💊 Suplementos', otros:'🧂 Otros'};
+  const porCat = {};
+  todos.forEach(a => {
+    if(!porCat[a.cat]) porCat[a.cat] = [];
+    porCat[a.cat].push(a);
+  });
+  sel.innerHTML = Object.entries(cats).map(([cat, label]) => {
+    const items = porCat[cat]||[];
+    if(!items.length) return '';
+    return `<optgroup label="${label}">${items.map(a=>`<option value="${a.nombre}">${a.nombre} (${a.prot}g prot/100g)</option>`).join('')}</optgroup>`;
+  }).join('');
+
+  // Preview al cambiar alimento o gramos
+  function updatePreview() {
+    const nombre = document.getElementById('nutriAlimento').value;
+    const gramos = parseFloat(document.getElementById('nutriGramos').value)||0;
+    const alim = todos.find(a=>a.nombre===nombre);
+    if(!alim || !gramos) { document.getElementById('nutriPreview').textContent=''; return; }
+    const f = gramos/100;
+    document.getElementById('nutriPreview').innerHTML =
+      `<strong>${gramos}g de ${nombre}:</strong> ${Math.round(alim.prot*f)}g prot · ${Math.round(alim.cal*f)} cal · ${Math.round(alim.carb*f)}g carbos · ${Math.round(alim.grasa*f)}g grasa`;
+  }
+  document.getElementById('nutriAlimento').onchange = updatePreview;
+  document.getElementById('nutriGramos').oninput = updatePreview;
+  updatePreview();
+
+  actualizarResumenNutri();
+  renderNutriLista();
+  renderNutriHistorial();
+}
+
+function actualizarResumenNutri() {
+  const dia = getNutriHoy();
+  const t = calcTotales(dia);
+  const meta = NUTRI_META.protMeta;
+  document.getElementById('nutriProtTotal').textContent = t.prot;
+  document.getElementById('nutriCalTotal').textContent = t.cal;
+  document.getElementById('nutriCarbTotal').textContent = t.carb;
+  document.getElementById('nutriGrasaTotal').textContent = t.grasa;
+  document.getElementById('nutriProtBar').style.width = Math.min(100, t.prot/meta*100)+'%';
+  document.getElementById('nutriProtBar').style.background = t.prot>=meta?'var(--success)':t.prot>=meta*0.7?'var(--warning)':'var(--accent)';
+}
+
+function renderNutriLista() {
+  const dia = getNutriHoy();
+  const el = document.getElementById('nutriLista');
+  const comidas = [
+    {key:'desayuno', label:'🌅 Desayuno'},
+    {key:'snack1', label:'🍎 Snack mañana'},
+    {key:'almuerzo', label:'☀️ Almuerzo'},
+    {key:'snack2', label:'🥜 Snack tarde'},
+    {key:'cena', label:'🌙 Cena'},
+    {key:'suplemento', label:'💊 Suplemento'}
+  ];
+  let html = '';
+  comidas.forEach(({key, label}) => {
+    const items = dia[key]||[];
+    if(!items.length) return;
+    const total = items.reduce((a,i)=>({prot:a.prot+(i.prot||0)*i.gramos/100, cal:a.cal+(i.cal||0)*i.gramos/100}),{prot:0,cal:0});
+    html += `<div style="margin-bottom:14px;">
+      <div style="font-size:13px; font-weight:700; margin-bottom:6px; color:var(--accent);">${label} <span style="font-size:11px; color:var(--text-muted); font-weight:400;">${Math.round(total.prot)}g prot · ${Math.round(total.cal)} cal</span></div>`;
+    items.forEach((item, idx) => {
+      const f = item.gramos/100;
+      html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-top:0.5px solid var(--border);">
+        <div>
+          <div style="font-size:13px;">${item.nombre} <span style="color:var(--text-muted);">${item.gramos}g</span></div>
+          <div style="font-size:11px; color:var(--text-secondary);">${Math.round((item.prot||0)*f)}g prot · ${Math.round((item.cal||0)*f)} cal · ${Math.round((item.carb||0)*f)}g C · ${Math.round((item.grasa||0)*f)}g G</div>
+        </div>
+        <button onclick="eliminarNutriItem('${key}',${idx})" style="border:none; background:none; color:var(--danger); font-size:18px; cursor:pointer; padding:4px 8px;">×</button>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html || `<div class="empty-state">Aún no has registrado comidas hoy.</div>`;
+}
+
+function renderNutriHistorial() {
+  const el = document.getElementById('nutriHistorial');
+  const weekDates = getWeekDates ? getWeekDates() : [];
+  const diasLabel = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  let html = '';
+  weekDates.forEach((date, i) => {
+    const dia = NUTRI[date];
+    if(!dia) return;
+    const t = calcTotales(dia);
+    if(t.prot===0 && t.cal===0) return;
+    const meta = NUTRI_META.protMeta;
+    const pct = Math.min(100, t.prot/meta*100);
+    const color = t.prot>=meta?'var(--success)':t.prot>=meta*0.7?'var(--warning)':'var(--danger)';
+    html += `<div style="border-top:0.5px solid var(--border); padding:10px 0;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span style="font-size:13px; font-weight:600;">${diasLabel[i]} ${date===todayStr()?'· hoy':''}</span>
+        <span style="font-size:13px; font-weight:700; color:${color};">${t.prot}g prot</span>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">${t.cal} cal · ${t.carb}g carbos · ${t.grasa}g grasa</div>
+      <div class="progress-bar"><div style="height:100%; border-radius:10px; background:${color}; width:${pct}%;"></div></div>
+    </div>`;
+  });
+  el.innerHTML = html || `<div class="empty-state">Sin datos esta semana aún.</div>`;
+}
+
+function eliminarNutriItem(comida, idx) {
+  const dia = getNutriHoy();
+  if(!dia[comida]) return;
+  if(!confirm('¿Eliminar este alimento?')) return;
+  dia[comida].splice(idx, 1);
+  NUTRI[todayStr()] = dia;
+  saveNutri(NUTRI);
+  actualizarResumenNutri();
+  renderNutriLista();
+  renderNutriHistorial();
+}
+
+document.getElementById('nutriAgregarBtn')?.addEventListener('click', () => {
+  const nombre = document.getElementById('nutriAlimento').value;
+  const gramos = parseFloat(document.getElementById('nutriGramos').value)||0;
+  const comida = document.getElementById('nutriComida').value;
+  if(!nombre || !gramos) { showToast('Selecciona alimento y gramos'); return; }
+  const todos = getAllAlimentos();
+  const alim = todos.find(a=>a.nombre===nombre);
+  if(!alim) return;
+  const dia = getNutriHoy();
+  if(!dia[comida]) dia[comida] = [];
+  dia[comida].push({nombre:alim.nombre, gramos, prot:alim.prot, cal:alim.cal, carb:alim.carb, grasa:alim.grasa});
+  NUTRI[todayStr()] = dia;
+  saveNutri(NUTRI);
+  showToast('Agregado ✓');
+  actualizarResumenNutri();
+  renderNutriLista();
+  renderNutriHistorial();
+});
+
+document.getElementById('nuevoAlimBtn')?.addEventListener('click', () => {
+  const nombre = document.getElementById('nuevoAlimNombre').value.trim();
+  const prot = parseFloat(document.getElementById('nuevoAlimProt').value)||0;
+  const cal = parseFloat(document.getElementById('nuevoAlimCal').value)||0;
+  const carb = parseFloat(document.getElementById('nuevoAlimCarb').value)||0;
+  const grasa = parseFloat(document.getElementById('nuevoAlimGrasa').value)||0;
+  const cat = document.getElementById('nuevoAlimCat').value;
+  if(!nombre) { showToast('Escribe el nombre del alimento'); return; }
+  const yaExiste = getAllAlimentos().some(a=>a.nombre.toLowerCase()===nombre.toLowerCase());
+  if(yaExiste) { showToast('Ese alimento ya existe'); return; }
+  NUTRI_META.alimentosCustom.push({nombre, prot, cal, carb, grasa, cat});
+  saveNutriMeta(NUTRI_META);
+  document.getElementById('nuevoAlimNombre').value='';
+  document.getElementById('nuevoAlimProt').value='';
+  document.getElementById('nuevoAlimCal').value='';
+  document.getElementById('nuevoAlimCarb').value='';
+  document.getElementById('nuevoAlimGrasa').value='';
+  showToast('Alimento guardado ✓');
+  renderNutricion();
+});
 
 </script>
 </body>
