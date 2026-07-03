@@ -114,6 +114,19 @@
   </div>
 
   <div class="view active" id="view-rutina">
+    <!-- CRONÓMETRO -->
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Sesión de hoy</div>
+          <div style="font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:1px;" id="cronDisplay">00:00:00</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="cronBtn" class="btn-primary btn-small" style="min-width:80px;">▶ Iniciar</button>
+          <button id="cronReset" class="btn-ghost btn-small" style="display:none;">↺</button>
+        </div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">¿Qué día entrenas hoy?</div>
       <select id="daySelect"></select>
@@ -290,7 +303,6 @@
       <div id="editorContent"></div>
     </div>
   </div>
-</div>
   <div class="view" id="view-nutricion">
     <!-- RESUMEN DEL DÍA -->
     <div class="card">
@@ -374,6 +386,7 @@
       <div id="nutriHistorial"></div>
     </div>
   </div>
+</div>
 
 <div class="bottom-nav">
   <div class="nav-item active" data-view="rutina"><span class="nav-icon">&#127947;</span>Rutina</div>
@@ -1821,36 +1834,74 @@ function renderEditorView() {
 
   try {
   let html = '';
-  let hayAlgo = false;
 
   ['manana','tarde'].forEach(momento => {
-    const sesion = day[momento];
-    if(!sesion || sesion.tipo !== 'pesas') return;
-    hayAlgo = true;
-    const grupo = sesion.grupo || 'piernas';
-    html += `<div style="margin-bottom:6px; font-weight:600; font-size:13px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">${momento === 'manana' ? 'Mañana' : 'Tarde'}</div>
-      <input type="text" class="session-title-input" data-day="${dayKey}" data-momento="${momento}" value="${sesion.titulo}" placeholder="Título de la sesión" style="margin-bottom:12px; font-weight:600;">`;
-    sesion.ejercicios.forEach((nombreEj, idx) => {
-      let currentGroup = grupo;
-      for(const g in BANCO_EJERCICIOS) { if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombreEj)) { currentGroup = g; break; } }
-      for(const g in DATA.customEjercicios) { if((DATA.customEjercicios[g]||[]).some(e=>e.nombre===nombreEj)) { currentGroup = g; break; } }
-      const def = findEjercicioDef(nombreEj);
-      const musculoNota = def.musculo || '';
-      html += `<div class="editor-row" style="flex-direction:column; align-items:stretch; gap:6px;">
-        ${musculoNota ? `<span style="font-size:15px; font-weight:700; color:var(--text);">${musculoNota}</span>` : ''}
-        <select data-edit-idx="${idx}" data-day="${dayKey}" data-momento="${momento}">
-          ${buildExerciseOptions(currentGroup, nombreEj)}
-        </select>
-      </div>`;
-    });
-    html += `<div style="height:14px;"></div>`;
+    const sesion = day[momento] || {tipo:'libre', titulo: momento==='manana'?'Mañana':'Tarde'};
+    const label = momento === 'manana' ? '🌅 Mañana' : '🌙 Tarde';
+    html += `<div style="margin-bottom:6px; font-weight:700; font-size:14px; color:var(--accent);">${label}</div>`;
+
+    // Selector de tipo de sesión
+    html += `<div style="margin-bottom:10px;">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Tipo de sesión</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="tipo-btn ${sesion.tipo==='cardio'?'active':''}" data-day="${dayKey}" data-momento="${momento}" data-tipo="cardio" style="padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:${sesion.tipo==='cardio'?'var(--accent)':'var(--card2)'}; color:${sesion.tipo==='cardio'?'white':'var(--text)'}; font-size:12px; cursor:pointer;">🏃 Trote</button>
+        <button class="tipo-btn ${sesion.tipo==='pesas'?'active':''}" data-day="${dayKey}" data-momento="${momento}" data-tipo="pesas" style="padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:${sesion.tipo==='pesas'?'var(--accent)':'var(--card2)'}; color:${sesion.tipo==='pesas'?'white':'var(--text)'}; font-size:12px; cursor:pointer;">💪 Pesas</button>
+        <button class="tipo-btn ${sesion.tipo==='libre'?'active':''}" data-day="${dayKey}" data-momento="${momento}" data-tipo="libre" style="padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:${sesion.tipo==='libre'?'var(--accent)':'var(--card2)'}; color:${sesion.tipo==='libre'?'white':'var(--text)'}; font-size:12px; cursor:pointer;">🗓 Libre</button>
+        <button class="tipo-btn ${sesion.tipo==='descanso'?'active':''}" data-day="${dayKey}" data-momento="${momento}" data-tipo="descanso" style="padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:${sesion.tipo==='descanso'?'var(--accent)':'var(--card2)'}; color:${sesion.tipo==='descanso'?'white':'var(--text)'}; font-size:12px; cursor:pointer;">😴 Descanso</button>
+      </div>
+    </div>`;
+
+    // Título editable
+    html += `<input type="text" class="session-title-input" data-day="${dayKey}" data-momento="${momento}" value="${sesion.titulo||''}" placeholder="Título (ej. Pecho y Tríceps)" style="margin-bottom:12px; font-weight:600;">`;
+
+    // Si es pesas, mostrar ejercicios editables
+    if(sesion.tipo === 'pesas' && sesion.ejercicios) {
+      const grupo = sesion.grupo || 'piernas';
+      sesion.ejercicios.forEach((nombreEj, idx) => {
+        let currentGroup = grupo;
+        for(const g in BANCO_EJERCICIOS) { if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombreEj)) { currentGroup = g; break; } }
+        for(const g in DATA.customEjercicios) { if((DATA.customEjercicios[g]||[]).some(e=>e.nombre===nombreEj)) { currentGroup = g; break; } }
+        const def = findEjercicioDef(nombreEj);
+        const musculoNota = def.musculo || '';
+        html += `<div class="editor-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+          ${musculoNota ? `<span style="font-size:15px; font-weight:700; color:var(--text);">${musculoNota}</span>` : ''}
+          <select data-edit-idx="${idx}" data-day="${dayKey}" data-momento="${momento}">
+            ${buildExerciseOptions(currentGroup, nombreEj)}
+          </select>
+        </div>`;
+      });
+    }
+
+    html += `<div style="height:16px; border-bottom:1px solid var(--border); margin-bottom:16px;"></div>`;
   });
 
-  if(!hayAlgo) {
-    html = `<div class="empty-state">Este día no tiene sesión de pesas para editar.</div>`;
-  }
-
   container.innerHTML = html;
+
+  // Listener para cambiar tipo de sesión
+  container.querySelectorAll('.tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dk = btn.dataset.day;
+      const mom = btn.dataset.momento;
+      const tipo = btn.dataset.tipo;
+      const tituloActual = DATA.rutina[dk][mom]?.titulo || '';
+      const ejerciciosActuales = DATA.rutina[dk][mom]?.ejercicios || [];
+      const grupoActual = DATA.rutina[dk][mom]?.grupo || 'piernas';
+
+      if(tipo === 'cardio') {
+        DATA.rutina[dk][mom] = {tipo:'cardio', titulo: tituloActual||'Trote', detalle:'3 millas, ritmo 7-7.5'};
+      } else if(tipo === 'pesas') {
+        DATA.rutina[dk][mom] = {tipo:'pesas', titulo: tituloActual||'Pesas', grupo: grupoActual, ejercicios: ejerciciosActuales.length ? ejerciciosActuales : ['Sentadilla con barra']};
+      } else if(tipo === 'libre') {
+        DATA.rutina[dk][mom] = {tipo:'libre', titulo:'Libre'};
+      } else if(tipo === 'descanso') {
+        DATA.rutina[dk][mom] = {tipo:'descanso', titulo:'Descanso'};
+      }
+      saveData(DATA);
+      showToast('Tipo de sesión actualizado ✓');
+      renderEditorView();
+      if(daySelect.value === dk) renderRoutine();
+    });
+  });
 
   container.querySelectorAll('select[data-edit-idx]').forEach(sel => {
     sel.addEventListener('change', () => {
@@ -2483,8 +2534,11 @@ const BANCO_ALIMENTOS = {
     ["Bacalao cocido", 23, 105, 0, 0.9],
   ],
   "lacteos": [
-    ["Huevo entero", 13, 155, 1.1, 11],
-    ["Clara de huevo", 11, 52, 0.7, 0.2],
+    ["Huevo entero (por 100g)", 13, 155, 1.1, 11],
+    ["Huevo duro 1 unidad (50g)", 6.5, 78, 0.6, 5.5],
+    ["Huevo duro 2 unidades (100g)", 13, 155, 1.1, 11],
+    ["Clara de huevo (por 100g)", 11, 52, 0.7, 0.2],
+    ["Clara de huevo 1 unidad (30g)", 3.6, 17, 0.2, 0.1],
     ["Leche entera", 3.4, 61, 4.8, 3.3],
     ["Leche descremada", 3.4, 34, 5, 0.1],
     ["Yogur griego natural", 10, 59, 3.6, 0.4],
@@ -2769,6 +2823,50 @@ document.getElementById('nuevoAlimBtn')?.addEventListener('click', () => {
   document.getElementById('nuevoAlimGrasa').value='';
   showToast('Alimento guardado ✓');
   renderNutricion();
+});
+
+// ===== CRONÓMETRO DE SESIÓN =====
+let cronInterval = null;
+let cronSegundos = 0;
+let cronActivo = false;
+
+function cronFormat(s) {
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+document.getElementById('cronBtn')?.addEventListener('click', () => {
+  const btn = document.getElementById('cronBtn');
+  const reset = document.getElementById('cronReset');
+  if(!cronActivo) {
+    cronActivo = true;
+    btn.textContent = '⏸ Pausar';
+    btn.style.background = 'var(--warning)';
+    reset.style.display = 'block';
+    cronInterval = setInterval(() => {
+      cronSegundos++;
+      document.getElementById('cronDisplay').textContent = cronFormat(cronSegundos);
+    }, 1000);
+  } else {
+    cronActivo = false;
+    clearInterval(cronInterval);
+    btn.textContent = '▶ Continuar';
+    btn.style.background = 'var(--success)';
+  }
+});
+
+document.getElementById('cronReset')?.addEventListener('click', () => {
+  if(!confirm('¿Reiniciar el cronómetro?')) return;
+  clearInterval(cronInterval);
+  cronSegundos = 0;
+  cronActivo = false;
+  document.getElementById('cronDisplay').textContent = '00:00:00';
+  const btn = document.getElementById('cronBtn');
+  btn.textContent = '▶ Iniciar';
+  btn.style.background = 'var(--accent)';
+  document.getElementById('cronReset').style.display = 'none';
 });
 
 </script>
