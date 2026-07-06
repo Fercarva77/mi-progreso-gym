@@ -108,6 +108,7 @@
     <div class="tab active" data-view="rutina">Rutina</div>
     <div class="tab" data-view="dashboard">Dashboard</div>
     <div class="tab" data-view="nutricion">Nutrición</div>
+    <div class="tab" data-view="plan">Plan</div>
     <div class="tab" data-view="peso">Peso</div>
     <div class="tab" data-view="biblioteca">Ejercicios</div>
     <div class="tab" data-view="editar">Editar</div>
@@ -259,8 +260,9 @@
     <!-- EXPORTAR -->
     <div class="card">
       <div class="card-title">Exportar datos</div>
-      <div style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">Descarga un CSV con todo el período seleccionado, compatible con Excel.</div>
-      <button class="btn-primary" id="exportBtn">&#128190; Exportar a Excel</button>
+      <div style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">Elige la semana que quieres exportar (lunes a domingo).</div>
+      <select id="exportSemanaSelect" style="margin-bottom:10px;"></select>
+      <button class="btn-primary" id="exportBtn">&#128190; Exportar semana a Excel</button>
     </div>
   </div>
 
@@ -415,11 +417,15 @@
   </div>
 </div>
 
+  <div class="view" id="view-plan">
+    <div id="planContent"></div>
+  </div>
+
 <div class="bottom-nav">
   <div class="nav-item active" data-view="rutina"><span class="nav-icon">&#127947;</span>Rutina</div>
   <div class="nav-item" data-view="dashboard"><span class="nav-icon">&#128200;</span>Dashboard</div>
   <div class="nav-item" data-view="nutricion"><span class="nav-icon">&#127829;</span>Nutrición</div>
-  <div class="nav-item" data-view="peso"><span class="nav-icon">&#9878;</span>Peso</div>
+  <div class="nav-item" data-view="plan"><span class="nav-icon">&#128197;</span>Plan</div>
   <div class="nav-item" data-view="biblioteca"><span class="nav-icon">&#128218;</span>Ejerc.</div>
   <div class="nav-item" data-view="editar"><span class="nav-icon">&#9881;</span>Editar</div>
 </div>
@@ -1056,7 +1062,7 @@ function saveData(d) {
 let DATA = loadData();
 if(!DATA.rutina) DATA.rutina = defaultRutina();
 // Versión del plan — si cambió, actualiza la rutina pero NO el historial
-const RUTINA_VERSION = 2; // incrementar cada vez que cambie el plan
+const RUTINA_VERSION = 3; // incrementar cada vez que cambie el plan
 if(!DATA.rutinaVersion || DATA.rutinaVersion < RUTINA_VERSION) {
   DATA.rutina = defaultRutina();
   DATA.rutinaVersion = RUTINA_VERSION;
@@ -1366,6 +1372,7 @@ function setView(view) {
   if(view==='progreso') renderProgresoView();
   if(view==='dashboard') renderDashboard();
   if(view==='nutricion') renderNutricion();
+  if(view==='plan') renderPlanView();
   if(view==='editar') renderEditorView();
   if(view==='biblioteca') loadAllImages().then(() => renderBibliotecaGrupos());
   if(view==='rutina') loadAllImages().then(() => renderRoutine());
@@ -2340,6 +2347,7 @@ function renderZonaHistorial() {
 function renderDashboard() {
   renderAguaWidget();
   renderZonaHistorial();
+  poblarSelectorSemanas();
 
   const { desde, hasta } = getPeriodDates(periodActivo);
   const periodoLabels = {semana:'Esta semana', mes:'Este mes', trimestre:'Últimos 3 meses', semestre:'Últimos 6 meses', anio:'Este año', todo:'Todo el historial'};
@@ -2548,19 +2556,68 @@ function drawBarChart(canvasId, data, unit, color, meta) {
 }
 
 // ===== EXPORTAR EXCEL =====
+
+function getLunesDeSemana(fecha) {
+  // Devuelve el lunes de la semana de la fecha dada
+  const d = new Date(fecha + 'T00:00:00');
+  const dow = d.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+
+function getDomingoDeSemanaDesdeLunes(lunes) {
+  const d = new Date(lunes + 'T00:00:00');
+  d.setDate(d.getDate() + 6);
+  return d.toISOString().split('T')[0];
+}
+
+function poblarSelectorSemanas() {
+  const sel = document.getElementById('exportSemanaSelect');
+  if(!sel) return;
+
+  // Recopilar todas las fechas con datos
+  const todasFechas = [
+    ...DATA.weights.map(w=>w.date),
+    ...DATA.workouts.map(w=>w.date),
+    ...Object.keys(AGUA)
+  ].filter(Boolean);
+
+  if(todasFechas.length === 0) {
+    sel.innerHTML = '<option>Sin datos aún</option>';
+    return;
+  }
+
+  // Obtener semanas únicas (por su lunes)
+  const semanasSet = new Set(todasFechas.map(getLunesDeSemana));
+  const semanas = [...semanasSet].sort().reverse(); // más recientes primero
+
+  // Agregar semana actual aunque no tenga datos
+  const lunesActual = getLunesDeSemana(todayStr());
+  if(!semanasSet.has(lunesActual)) semanas.unshift(lunesActual);
+
+  sel.innerHTML = semanas.map(lunes => {
+    const domingo = getDomingoDeSemanaDesdeLunes(lunes);
+    const esActual = lunes === lunesActual;
+    return `<option value="${lunes}">${formatDate(lunes)} — ${formatDate(domingo)}${esActual?' (esta semana)':''}</option>`;
+  }).join('');
+}
+
 document.getElementById('exportBtn')?.addEventListener('click', exportarExcel);
 
 function exportarExcel() {
-  const { desde, hasta } = getPeriodDates(periodActivo);
-  const periodoLabels = {semana:'Semana', mes:'Mes', trimestre:'Trimestre', semestre:'Semestre', anio:'Año', todo:'Historial'};
+  const sel = document.getElementById('exportSemanaSelect');
+  const lunes = sel?.value || getLunesDeSemana(todayStr());
+  const domingo = getDomingoDeSemanaDesdeLunes(lunes);
 
-  const pesos = DATA.weights.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>a.date.localeCompare(b.date));
-  const workouts = DATA.workouts.filter(w => w.date >= desde && w.date <= hasta).sort((a,b)=>a.date.localeCompare(b.date));
-  const aguaDias = Object.entries(AGUA).filter(([d]) => d >= desde && d <= hasta).sort();
+  const pesos = DATA.weights.filter(w => w.date >= lunes && w.date <= domingo).sort((a,b)=>a.date.localeCompare(b.date));
+  const workouts = DATA.workouts.filter(w => w.date >= lunes && w.date <= domingo).sort((a,b)=>a.date.localeCompare(b.date));
+  const aguaDias = Object.entries(AGUA).filter(([d]) => d >= lunes && d <= domingo).sort();
+  const nutriDias = Object.entries(NUTRI||{}).filter(([d]) => d >= lunes && d <= domingo).sort();
 
   const rows = [];
-  rows.push([`REPORTE ${periodoLabels[periodActivo].toUpperCase()} — CARVAJAL GYM`]);
-  rows.push([`Período: ${formatDate(desde)} al ${formatDate(hasta)}`]);
+  rows.push([`REPORTE SEMANAL — CARVAJAL GYM`]);
+  rows.push([`Semana: ${formatDate(lunes)} al ${formatDate(domingo)}`]);
   rows.push([]);
 
   rows.push(['=== PESO CORPORAL ===']);
@@ -2573,9 +2630,21 @@ function exportarExcel() {
   aguaDias.forEach(([d,v]) => rows.push([d, v.toFixed(2)]));
   rows.push([]);
 
+  // Nutrición
+  if(nutriDias.length > 0) {
+    rows.push(['=== NUTRICIÓN ===']);
+    rows.push(['Fecha', 'Proteína (g)', 'Calorías', 'Carbos (g)', 'Grasa (g)']);
+    nutriDias.forEach(([d, dia]) => {
+      const t = calcTotales(dia);
+      rows.push([d, t.prot, t.cal, t.carb, t.grasa]);
+    });
+    rows.push([]);
+  }
+
   rows.push(['=== ENTRENAMIENTOS ===']);
   workouts.forEach(w => {
-    rows.push([w.date.toUpperCase()]);
+    const duracion = w.duracionSesion ? `Tiempo en gym: ${cronFormat(w.duracionSesion)}` : '';
+    rows.push([w.date.toUpperCase(), duracion]);
     ['manana','tarde'].forEach(m => {
       const s = w[m];
       if(!s) return;
@@ -2598,7 +2667,7 @@ function exportarExcel() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `CarvajálGym_${periodoLabels[periodActivo]}_${desde}.csv`;
+  a.download = `CarvajálGym_${lunes}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('Exportado ✓');
@@ -2919,7 +2988,153 @@ document.getElementById('nuevoAlimBtn')?.addEventListener('click', () => {
   renderNutricion();
 });
 
-// ===== CRONÓMETRO DE SESIÓN (timestamp-based, funciona en background) =====
+// ===== VISTA PLAN =====
+function renderPlanView() {
+  const container = document.getElementById('planContent');
+  const diasSemana = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+  const diasLabel = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const diasLargo = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const today = new Date();
+  const todayISO = todayStr();
+
+  // Calcular lunes de esta semana
+  const dow = today.getDay();
+  const diffLunes = dow === 0 ? -6 : 1 - dow;
+  const lunesBase = new Date(today);
+  lunesBase.setDate(today.getDate() + diffLunes);
+
+  const GRUPO_COLORS2 = {
+    pecho:'#e07040', espalda:'#2389a0', piernas:'#2e9a5c',
+    hombros:'#7c5cdb', biceps:'#d4a017', triceps:'#c04070',
+    core:'#5a8a6a', cardio:'#4cc4cd', descanso:'#555'
+  };
+
+  // Plan de 8 semanas
+  const PLAN_8_SEMANAS = [
+    { semana:1, fase:'Adaptación', nota:'Aprende los movimientos. Pesos moderados, forma perfecta.' },
+    { semana:2, fase:'Adaptación', nota:'Sube 5lb en los ejercicios principales si completaste todas las series.' },
+    { semana:3, fase:'Adaptación', nota:'Agrega 1 serie extra en press banca y sentadilla.' },
+    { semana:4, fase:'Descarga', nota:'⚡ SEMANA DE DESCARGA: baja el peso al 60%, solo 3 series. Dejas que el cuerpo se recupere.' },
+    { semana:5, fase:'Hipertrofia', nota:'Vuelves al 100% pero con más peso que semana 3. Aumenta volumen a 4-5 series.' },
+    { semana:6, fase:'Hipertrofia', nota:'Sube 5lb en todos los ejercicios donde completaste todas las reps.' },
+    { semana:7, fase:'Hipertrofia', nota:'Agrega una serie extra en los ejercicios compuestos principales.' },
+    { semana:8, fase:'Descarga', nota:'⚡ SEMANA DE DESCARGA: misma rutina al 60%. Después evaluamos progreso y ajustamos fase 3.' },
+  ];
+
+  const FASE_COLORS = { 'Adaptación':'#2389a0', 'Hipertrofia':'#2e9a5c', 'Descarga':'#e07040' };
+
+  // Calcular en qué semana del plan estás
+  // Asumimos que la semana 1 empezó el primer lunes con datos, o hace 1 semana si no hay datos
+  let primerLunes = null;
+  if(DATA.workouts.length > 0) {
+    const fechaMin = DATA.workouts.map(w=>w.date).sort()[0];
+    primerLunes = getLunesDeSemana(fechaMin);
+  } else {
+    primerLunes = lunesBase.toISOString().split('T')[0];
+  }
+  const msxSemana = 7*24*60*60*1000;
+  const lunesBaseISO = lunesBase.toISOString().split('T')[0];
+  const semanaActualNum = Math.max(1, Math.round((new Date(lunesBaseISO) - new Date(primerLunes)) / msxSemana) + 1);
+  const planActual = PLAN_8_SEMANAS[Math.min(semanaActualNum-1, 7)];
+
+  let html = '';
+
+  // Info de fase actual
+  html += `<div class="card" style="border-left:4px solid ${FASE_COLORS[planActual?.fase||'Adaptación']};">
+    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Semana ${semanaActualNum} de 8 · ${planActual?.fase||'Adaptación'}</div>
+    <div style="font-size:13px; color:var(--text-secondary); line-height:1.5;">${planActual?.nota||''}</div>
+    <div style="margin-top:10px; background:var(--card2); border-radius:8px; height:8px; overflow:hidden;">
+      <div style="height:100%; width:${(semanaActualNum/8)*100}%; background:${FASE_COLORS[planActual?.fase||'Adaptación']}; border-radius:8px; transition:width 0.5s;"></div>
+    </div>
+    <div style="font-size:11px; color:var(--text-muted); margin-top:4px; text-align:right;">${semanaActualNum}/8 semanas</div>
+  </div>`;
+
+  // Plan de 8 semanas completo
+  html += `<div class="card">
+    <div class="card-title">Plan de 8 semanas</div>`;
+  PLAN_8_SEMANAS.forEach(p => {
+    const esActual = p.semana === semanaActualNum;
+    const yasPaso = p.semana < semanaActualNum;
+    const color = FASE_COLORS[p.fase];
+    html += `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:0.5px solid var(--border); opacity:${yasPaso?'0.5':'1'};">
+      <div style="width:28px; height:28px; border-radius:50%; background:${esActual?color:'var(--card2)'}; border:2px solid ${color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:${esActual?'white':color}; flex-shrink:0;">${yasPaso?'✓':p.semana}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px; font-weight:${esActual?'700':'400'}; color:${esActual?color:'var(--text)'};">Semana ${p.semana} — ${p.fase}</div>
+        <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">${p.nota}</div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Próximas 4 semanas día por día
+  html += `<div class="card-title" style="padding:0 0 8px;">Próximas 4 semanas</div>`;
+
+  for(let semIdx=0; semIdx<4; semIdx++) {
+    const lunesSem = new Date(lunesBase);
+    lunesSem.setDate(lunesBase.getDate() + semIdx*7);
+    const lunesSemISO = lunesSem.toISOString().split('T')[0];
+    const nSemana = semanaActualNum + semIdx;
+    const planSem = PLAN_8_SEMANAS[Math.min(nSemana-1, 7)];
+    const esSemanaActual = semIdx === 0;
+
+    html += `<div class="card" style="margin-bottom:12px; ${esSemanaActual?'border-color:var(--accent);':'' }">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px; font-weight:800;">${esSemanaActual?'Esta semana':'Semana '+nSemana}</div>
+          <div style="font-size:11px; color:var(--text-muted);">${formatDate(lunesSemISO)} — ${formatDate(getDomingoDeSemanaDesdeLunes(lunesSemISO))}</div>
+        </div>
+        <span style="background:${FASE_COLORS[planSem?.fase||'Adaptación']}22; color:${FASE_COLORS[planSem?.fase||'Adaptación']}; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600;">${planSem?.fase||'Adaptación'}</span>
+      </div>`;
+
+    diasSemana.forEach((dk, dIdx) => {
+      const fechaDia = new Date(lunesSem);
+      fechaDia.setDate(lunesSem.getDate() + dIdx);
+      const fechaISO = fechaDia.toISOString().split('T')[0];
+      const esHoy = fechaISO === todayISO;
+      const workout = DATA.workouts.find(w=>w.date===fechaISO);
+      const sesionMañana = DATA.rutina[dk]?.manana;
+      const sesionTarde = DATA.rutina[dk]?.tarde;
+
+      // Color del día según grupo
+      const grupo = DATA.rutina[dk]?.grupoPrincipal || 'descanso';
+      const colorDia = GRUPO_COLORS2[grupo] || '#555';
+
+      html += `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:0.5px solid var(--border)${esHoy?'; background:var(--card2); margin:0 -20px; padding:8px 20px; border-radius:8px;':''};">
+        <div style="min-width:36px; text-align:center;">
+          <div style="font-size:12px; font-weight:700; color:${esHoy?'var(--accent)':'var(--text-muted)'};">${diasLabel[dIdx]}</div>
+          <div style="font-size:11px; color:var(--text-muted);">${fechaDia.getDate()}</div>
+          ${workout ? '<div style="font-size:10px; color:var(--success);">✓</div>' : ''}
+        </div>
+        <div style="flex:1;">`;
+
+      // Mañana
+      if(sesionMañana && sesionMañana.tipo !== 'descanso') {
+        const iconM = sesionMañana.tipo==='cardio'?'🏃':'💪';
+        html += `<div style="font-size:12px; margin-bottom:3px;"><span style="color:var(--text-muted); font-size:10px;">AM</span> ${iconM} ${sesionMañana.titulo}</div>`;
+      }
+
+      // Tarde
+      if(sesionTarde && sesionTarde.tipo !== 'descanso' && sesionTarde.tipo !== 'libre') {
+        const iconT = sesionTarde.tipo==='cardio'?'🏃':'💪';
+        html += `<div style="font-size:12px;"><span style="color:var(--text-muted); font-size:10px;">PM</span> ${iconT} <strong style="color:${colorDia};">${sesionTarde.titulo}</strong></div>`;
+        if(sesionTarde.ejercicios?.length) {
+          // Agrupar por músculo
+          const musculos = [...new Set(sesionTarde.ejercicios.map(e=>findEjercicioDef(e).musculo||'').filter(Boolean))];
+          if(musculos.length) html += `<div style="font-size:10px; color:var(--text-muted); margin-top:1px;">${musculos.join(' · ')}</div>`;
+        }
+      } else if(sesionTarde?.tipo === 'descanso' || dk === 'domingo') {
+        html += `<div style="font-size:12px; color:var(--text-muted);">😴 Descanso</div>`;
+      }
+
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+
 const CRON_KEY = 'carvajalCron_v1';
 
 function cronLoad() {
