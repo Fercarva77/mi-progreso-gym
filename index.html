@@ -94,12 +94,33 @@
   /* Modal resumen */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
   .modal-overlay.show { display:flex; }
-  .modal-box { background:var(--card); border-radius:var(--radius); padding:20px; width:100%; max-width:360px; }
+  .modal-box { background:var(--card); border-radius:var(--radius); padding:20px; width:100%; max-width:360px; max-height:90vh; overflow-y:auto; }
   .modal-title { font-size:18px; font-weight:700; margin-bottom:16px; text-align:center; }
   .modal-stat { display:flex; justify-content:space-between; padding:10px 0; border-top:0.5px solid var(--border); font-size:14px; }
   .modal-stat:first-of-type { border-top:none; }
   .modal-stat-val { font-weight:700; color:var(--accent); }
   .pr-badge { display:inline-block; background:#ffd700; color:#7a5c00; font-size:10px; font-weight:700; padding:2px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; }
+  /* Caritas por serie */
+  .feeling-bar { display:flex; gap:8px; justify-content:center; padding:8px 0 4px; animation:fadeInUp 0.2s ease; }
+  .feeling-btn { font-size:26px; background:var(--card2); border:1.5px solid var(--border); border-radius:12px; padding:6px 10px; cursor:pointer; transition:transform 0.1s; }
+  .feeling-btn:active { transform:scale(1.2); }
+  .feeling-btn.selected { border-color:var(--accent); background:var(--accent-light); }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  /* Onboarding */
+  .onboarding-overlay { position:fixed; inset:0; background:var(--bg); z-index:300; display:none; overflow-y:auto; padding:24px 20px 40px; }
+  .onboarding-overlay.show { display:block; }
+  .onboarding-step { display:none; }
+  .onboarding-step.active { display:block; }
+  .onboarding-logo { font-size:56px; text-align:center; margin-bottom:8px; }
+  .onboarding-title { font-size:24px; font-weight:800; text-align:center; margin-bottom:6px; }
+  .onboarding-sub { font-size:14px; color:var(--text-secondary); text-align:center; margin-bottom:28px; }
+  .level-card { border:2px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:border-color 0.15s, background 0.15s; }
+  .level-card.selected { border-color:var(--accent); background:var(--accent-light); }
+  .level-card-title { font-size:15px; font-weight:700; margin-bottom:2px; }
+  .level-card-sub { font-size:12px; color:var(--text-secondary); }
+  .days-picker { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+  .day-pick-btn { flex:1; min-width:44px; padding:10px 8px; border-radius:10px; border:2px solid var(--border); background:var(--card2); font-size:13px; font-weight:600; cursor:pointer; text-align:center; }
+  .day-pick-btn.selected { border-color:var(--accent); background:var(--accent-light); color:var(--accent); }
   .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--success); color:white; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; transition:all 0.25s ease; pointer-events:none; z-index:50; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:4px; }
@@ -130,6 +151,73 @@
     <div class="modal-title">🏁 Sesión completada</div>
     <div id="modalResumenBody"></div>
     <button class="btn-primary" style="margin-top:16px;" id="modalResumenClose">Cerrar</button>
+  </div>
+</div>
+<!-- Onboarding -->
+<div class="onboarding-overlay" id="onboardingOverlay">
+  <!-- Paso 1: Bienvenida + datos personales -->
+  <div class="onboarding-step active" id="ob-step1">
+    <div class="onboarding-logo">💪</div>
+    <div class="onboarding-title">Bienvenido a Gym Tracker</div>
+    <div class="onboarding-sub">Cuéntanos un poco sobre ti para personalizar tu experiencia</div>
+    <div class="card">
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Tu nombre</div>
+        <input type="text" id="ob-nombre" placeholder="Ej. Fabián">
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Sexo</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-ghost" id="ob-sexoM" style="flex:1;" onclick="obSelectSexo('M')">👨 Hombre</button>
+          <button class="btn-ghost" id="ob-sexoF" style="flex:1;" onclick="obSelectSexo('F')">👩 Mujer</button>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Peso (lb)</div>
+          <input type="number" id="ob-peso" placeholder="ej. 185" inputmode="decimal">
+        </div>
+        <div>
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Altura (cm)</div>
+          <input type="number" id="ob-altura" placeholder="ej. 176" inputmode="numeric">
+        </div>
+      </div>
+      <div id="ob-imc-result" style="margin-top:8px; font-size:13px; color:var(--text-secondary); min-height:20px;"></div>
+    </div>
+    <button class="btn-primary" onclick="obStep1Next()">Continuar →</button>
+  </div>
+  <!-- Paso 2: Nivel -->
+  <div class="onboarding-step" id="ob-step2">
+    <div class="onboarding-logo">🏋️</div>
+    <div class="onboarding-title">¿Cuál es tu nivel?</div>
+    <div class="onboarding-sub">Esto define tu rutina inicial — la puedes cambiar después</div>
+    <div class="level-card" id="ob-lv-principiante" onclick="obSelectLevel('principiante')">
+      <div class="level-card-title">🌱 Principiante</div>
+      <div class="level-card-sub">Menos de 1 año entrenando · 3 días/semana · Full body</div>
+    </div>
+    <div class="level-card" id="ob-lv-intermedio" onclick="obSelectLevel('intermedio')">
+      <div class="level-card-title">⚡ Intermedio</div>
+      <div class="level-card-sub">1–3 años entrenando · 3 a 5 días/semana · Por grupos musculares</div>
+    </div>
+    <div class="level-card" id="ob-lv-avanzado" onclick="obSelectLevel('avanzado')">
+      <div class="level-card-title">🔥 Avanzado</div>
+      <div class="level-card-sub">3+ años entrenando · 5–6 días o rutina propia</div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:16px;">
+      <button class="btn-ghost" style="flex:1;" onclick="obGoStep(1)">← Volver</button>
+      <button class="btn-primary" style="flex:2;" id="ob-step2-next" onclick="obStep2Next()" disabled>Continuar →</button>
+    </div>
+  </div>
+  <!-- Paso 3: Días (intermedio/avanzado) -->
+  <div class="onboarding-step" id="ob-step3">
+    <div class="onboarding-logo">📅</div>
+    <div class="onboarding-title" id="ob-step3-title">¿Cuántos días entrenas?</div>
+    <div class="onboarding-sub" id="ob-step3-sub">Elige los días de la semana</div>
+    <div id="ob-step3-options"></div>
+    <div style="display:flex; gap:8px; margin-top:16px;">
+      <button class="btn-ghost" style="flex:1;" onclick="obGoStep(2)">← Volver</button>
+      <button class="btn-primary" style="flex:2;" id="ob-step3-next" onclick="obStep3Next()">Comenzar 🚀</button>
+    </div>
   </div>
 </div>
 <div class="header">
@@ -330,6 +418,16 @@
         <input type="text" id="nameInput" placeholder="Tu nombre (ej. Fabián)">
       </div>
       <button class="btn-primary" id="saveNameBtn">Guardar nombre</button>
+      <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:14px; font-weight:600;">😤 Caritas por serie</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Muestra cómo te sentiste al marcar ✓</div>
+        </div>
+        <label style="position:relative; display:inline-block; width:44px; height:26px;">
+          <input type="checkbox" id="feelingToggle" style="opacity:0; width:0; height:0;" onchange="saveFeelingPref(this.checked)">
+          <span id="feelingToggleSlider" style="position:absolute; inset:0; background:var(--border); border-radius:13px; cursor:pointer; transition:0.2s;"></span>
+        </label>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Agregar ejercicio nuevo</div>
@@ -1731,6 +1829,8 @@ applyName();
 loadAllImages().then(() => {
   renderRoutine();
   renderHeaderDate();
+  checkOnboarding();
+  initFeelingToggle();
 });
 
 // ===== PESO =====
@@ -3293,6 +3393,326 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// ===== ONBOARDING =====
+let obData = { sexo: null, nivel: null, dias: null };
+
+function obSelectSexo(s) {
+  obData.sexo = s;
+  document.getElementById('ob-sexoM').style.borderColor = s==='M' ? 'var(--accent)' : '';
+  document.getElementById('ob-sexoM').style.background = s==='M' ? 'var(--accent-light)' : '';
+  document.getElementById('ob-sexoF').style.borderColor = s==='F' ? 'var(--accent)' : '';
+  document.getElementById('ob-sexoF').style.background = s==='F' ? 'var(--accent-light)' : '';
+  obCalcIMC();
+}
+
+function obCalcIMC() {
+  const peso = parseFloat(document.getElementById('ob-peso').value);
+  const altura = parseFloat(document.getElementById('ob-altura').value);
+  const res = document.getElementById('ob-imc-result');
+  if(!peso || !altura) { res.textContent = ''; return; }
+  const kg = peso / 2.20462;
+  const m = altura / 100;
+  const imc = (kg / (m*m)).toFixed(1);
+  let cat = '', color = '';
+  if(imc < 18.5) { cat = 'Bajo peso'; color = 'var(--warning)'; }
+  else if(imc < 25) { cat = 'Peso normal ✓'; color = 'var(--success)'; }
+  else if(imc < 30) { cat = 'Sobrepeso'; color = 'var(--warning)'; }
+  else { cat = 'Obesidad'; color = 'var(--danger)'; }
+  res.innerHTML = `<span style="color:${color}; font-weight:600;">IMC ${imc} — ${cat}</span>`;
+}
+
+document.getElementById('ob-peso')?.addEventListener('input', obCalcIMC);
+document.getElementById('ob-altura')?.addEventListener('input', obCalcIMC);
+
+function obGoStep(n) {
+  document.querySelectorAll('.onboarding-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`ob-step${n}`).classList.add('active');
+}
+
+function obStep1Next() {
+  const nombre = document.getElementById('ob-nombre').value.trim();
+  if(!nombre) { alert('Ingresa tu nombre'); return; }
+  DATA.nombre = nombre;
+  const peso = parseFloat(document.getElementById('ob-peso').value);
+  const altura = parseFloat(document.getElementById('ob-altura').value);
+  if(peso) { const kg=peso/2.20462; DATA.weights.push({date:todayStr(), lbs:Math.round(peso*10)/10, kg:Math.round(kg*10)/10}); }
+  if(altura) DATA.perfilAltura = altura;
+  if(obData.sexo) DATA.perfilSexo = obData.sexo;
+  saveData(DATA);
+  obGoStep(2);
+}
+
+function obSelectLevel(nivel) {
+  obData.nivel = nivel;
+  ['principiante','intermedio','avanzado'].forEach(l => {
+    document.getElementById(`ob-lv-${l}`).classList.toggle('selected', l === nivel);
+  });
+  document.getElementById('ob-step2-next').disabled = false;
+}
+
+function obStep2Next() {
+  if(!obData.nivel) return;
+  if(obData.nivel === 'principiante') {
+    // Directo — rutina fija 3 días
+    obApplyRutina('principiante', 3);
+  } else if(obData.nivel === 'avanzado') {
+    // Mostrar opciones avanzado
+    document.getElementById('ob-step3-title').textContent = '¿Cómo quieres entrenar?';
+    document.getElementById('ob-step3-sub').textContent = 'Elige tu modalidad';
+    document.getElementById('ob-step3-options').innerHTML = `
+      <div class="level-card" onclick="obSelectDias('custom')" id="ob-d-custom">
+        <div class="level-card-title">✏️ Armar mi propia rutina</div>
+        <div class="level-card-sub">Empieza con días vacíos y personaliza cada uno</div>
+      </div>
+      <div class="level-card" onclick="obSelectDias(5)" id="ob-d-5">
+        <div class="level-card-title">5 días</div>
+        <div class="level-card-sub">Lun–Vie: Push / Pull / Legs / Upper / Lower</div>
+      </div>
+      <div class="level-card" onclick="obSelectDias(6)" id="ob-d-6">
+        <div class="level-card-title">6 días</div>
+        <div class="level-card-sub">Lun–Sáb: PPL x2 (Push Pull Legs repetido)</div>
+      </div>
+    `;
+    obGoStep(3);
+  } else {
+    // Intermedio — elegir días
+    document.getElementById('ob-step3-title').textContent = '¿Cuántos días entrenas?';
+    document.getElementById('ob-step3-sub').textContent = 'Rutina por grupos musculares';
+    document.getElementById('ob-step3-options').innerHTML = `
+      <div class="level-card" onclick="obSelectDias(3)" id="ob-d-3">
+        <div class="level-card-title">3 días</div>
+        <div class="level-card-sub">Lun / Mié / Vie</div>
+      </div>
+      <div class="level-card" onclick="obSelectDias(4)" id="ob-d-4">
+        <div class="level-card-title">4 días</div>
+        <div class="level-card-sub">Lun / Mar / Jue / Vie</div>
+      </div>
+      <div class="level-card" onclick="obSelectDias(5)" id="ob-d-5">
+        <div class="level-card-title">5 días</div>
+        <div class="level-card-sub">Lun–Vie</div>
+      </div>
+    `;
+    obGoStep(3);
+  }
+}
+
+function obSelectDias(d) {
+  obData.dias = d;
+  document.querySelectorAll('#ob-step3-options .level-card').forEach(c => c.classList.remove('selected'));
+  const id = d === 'custom' ? 'ob-d-custom' : `ob-d-${d}`;
+  document.getElementById(id)?.classList.add('selected');
+}
+
+function obStep3Next() {
+  if(obData.dias === null) { alert('Elige una opción'); return; }
+  obApplyRutina(obData.nivel, obData.dias);
+}
+
+function obApplyRutina(nivel, dias) {
+  const descanso = { manana:{tipo:'descanso',titulo:'Descanso'}, tarde:{tipo:'descanso',titulo:'Descanso'} };
+  const libre = { tipo:'libre', titulo:'Libre' };
+  const mkPesas = (titulo, grupo, ejercicios) => ({ tipo:'pesas', titulo, grupo, ejercicios, series:3, reps:10 });
+
+  let rutina = {};
+  const dias7 = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+
+  if(nivel === 'principiante') {
+    // Full body 3 días
+    const fullBody = mkPesas('Full Body', 'piernas', ['Sentadilla con barra','Press banca plano con barra','Remo con barra','Press militar con mancuernas','Curl de bíceps con barra recta','Extensión de tríceps en polea (cuerda)']);
+    rutina = {
+      lunes:    { grupoPrincipal:'pecho',    manana: fullBody, tarde: libre },
+      martes:   { grupoPrincipal:'descanso', ...descanso },
+      miercoles:{ grupoPrincipal:'pecho',    manana: fullBody, tarde: libre },
+      jueves:   { grupoPrincipal:'descanso', ...descanso },
+      viernes:  { grupoPrincipal:'pecho',    manana: fullBody, tarde: libre },
+      sabado:   { grupoPrincipal:'descanso', ...descanso },
+      domingo:  { grupoPrincipal:'descanso', ...descanso }
+    };
+  } else if(nivel === 'intermedio') {
+    const pechoTri = mkPesas('Pecho + Tríceps','pecho',['Press banca plano con barra','Press banca inclinado con mancuernas','Aperturas en máquina (pec-deck)','Extensión de tríceps en polea (cuerda)','Press francés con barra']);
+    const espaldaBi = mkPesas('Espalda + Bíceps','espalda',['Jalón al pecho en polea (agarre ancho)','Remo con barra','Remo en polea baja (agarre estrecho)','Curl de bíceps con barra recta','Curl martillo']);
+    const hombros = mkPesas('Hombros','hombros',['Press militar con mancuernas','Elevaciones laterales con mancuernas','Pájaros con mancuernas (deltoide posterior)','Face pull en polea']);
+    const piernas = mkPesas('Piernas','piernas',['Sentadilla con barra','Prensa de piernas (pies separados)','Extensión de cuádriceps','Peso muerto rumano con barra','Curl femoral acostado','Elevación de talones de pie en máquina']);
+    const upperA = mkPesas('Upper A','pecho',['Press banca plano con barra','Remo con barra','Press militar con mancuernas','Curl de bíceps con barra recta','Extensión de tríceps en polea (cuerda)']);
+    const lowerA = mkPesas('Lower','piernas',['Sentadilla con barra','Prensa de piernas (pies separados)','Peso muerto rumano con barra','Curl femoral acostado','Elevación de talones de pie en máquina']);
+    if(dias === 3) {
+      rutina = {
+        lunes:    { grupoPrincipal:'pecho',    manana: pechoTri,  tarde: libre },
+        martes:   { grupoPrincipal:'descanso', ...descanso },
+        miercoles:{ grupoPrincipal:'espalda',  manana: espaldaBi, tarde: libre },
+        jueves:   { grupoPrincipal:'descanso', ...descanso },
+        viernes:  { grupoPrincipal:'piernas',  manana: piernas,   tarde: libre },
+        sabado:   { grupoPrincipal:'descanso', ...descanso },
+        domingo:  { grupoPrincipal:'descanso', ...descanso }
+      };
+    } else if(dias === 4) {
+      rutina = {
+        lunes:    { grupoPrincipal:'pecho',    manana: pechoTri,  tarde: libre },
+        martes:   { grupoPrincipal:'piernas',  manana: piernas,   tarde: libre },
+        miercoles:{ grupoPrincipal:'descanso', ...descanso },
+        jueves:   { grupoPrincipal:'espalda',  manana: espaldaBi, tarde: libre },
+        viernes:  { grupoPrincipal:'hombros',  manana: hombros,   tarde: libre },
+        sabado:   { grupoPrincipal:'descanso', ...descanso },
+        domingo:  { grupoPrincipal:'descanso', ...descanso }
+      };
+    } else {
+      rutina = {
+        lunes:    { grupoPrincipal:'pecho',    manana: pechoTri,  tarde: libre },
+        martes:   { grupoPrincipal:'espalda',  manana: espaldaBi, tarde: libre },
+        miercoles:{ grupoPrincipal:'descanso', ...descanso },
+        jueves:   { grupoPrincipal:'hombros',  manana: hombros,   tarde: libre },
+        viernes:  { grupoPrincipal:'piernas',  manana: piernas,   tarde: libre },
+        sabado:   { grupoPrincipal:'descanso', ...descanso },
+        domingo:  { grupoPrincipal:'descanso', ...descanso }
+      };
+    }
+  } else {
+    // Avanzado
+    if(dias === 'custom') {
+      // Días vacíos para personalizar
+      dias7.forEach(d => { rutina[d] = { grupoPrincipal:'descanso', ...descanso }; });
+    } else if(dias === 5) {
+      const push = mkPesas('Push','pecho',['Press banca plano con barra','Press banca inclinado con mancuernas','Press de pecho en máquina (Chest Press)','Press militar con mancuernas','Elevaciones laterales con mancuernas','Extensión de tríceps en polea (cuerda)']);
+      const pull = mkPesas('Pull','espalda',['Dominadas','Remo con barra','Jalón al pecho en polea (agarre ancho)','Remo en polea baja (agarre estrecho)','Curl de bíceps con barra recta','Curl martillo']);
+      const legs = mkPesas('Legs','piernas',['Sentadilla con barra','Prensa de piernas (pies separados)','Extensión de cuádriceps','Peso muerto rumano con barra','Curl femoral acostado','Elevación de talones de pie en máquina']);
+      const upper = mkPesas('Upper','pecho',['Press banca plano con barra','Remo con barra','Press militar con mancuernas','Fondos en paralelas (tríceps)','Curl de bíceps con barra recta']);
+      const lower = mkPesas('Lower','piernas',['Sentadilla frontal','Peso muerto convencional','Prensa de piernas (pies separados)','Curl femoral acostado','Hip thrust con barra']);
+      rutina = {
+        lunes:    { grupoPrincipal:'pecho',    manana: push,  tarde: libre },
+        martes:   { grupoPrincipal:'espalda',  manana: pull,  tarde: libre },
+        miercoles:{ grupoPrincipal:'piernas',  manana: legs,  tarde: libre },
+        jueves:   { grupoPrincipal:'pecho',    manana: upper, tarde: libre },
+        viernes:  { grupoPrincipal:'piernas',  manana: lower, tarde: libre },
+        sabado:   { grupoPrincipal:'descanso', ...descanso },
+        domingo:  { grupoPrincipal:'descanso', ...descanso }
+      };
+    } else {
+      // PPL x2
+      const push1 = mkPesas('Push A','pecho',['Press banca plano con barra','Press banca inclinado con mancuernas','Elevaciones laterales con mancuernas','Extensión de tríceps en polea (cuerda)','Press francés con barra']);
+      const pull1 = mkPesas('Pull A','espalda',['Dominadas','Remo con barra','Jalón al pecho en polea (agarre ancho)','Curl de bíceps con barra recta','Curl martillo']);
+      const legs1 = mkPesas('Legs A','piernas',['Sentadilla con barra','Prensa de piernas (pies separados)','Extensión de cuádriceps','Peso muerto rumano con barra','Elevación de talones de pie en máquina']);
+      const push2 = mkPesas('Push B','pecho',['Press de pecho en máquina (Chest Press)','Aperturas en máquina (pec-deck)','Press militar con mancuernas','Extensión de tríceps en polea (barra recta)','Extensión sobre la cabeza en polea']);
+      const pull2 = mkPesas('Pull B','espalda',['Remo en polea baja (agarre estrecho)','Hiperextensiones (lumbares)','Curl concentrado','Curl en banco scott con barra','Curl en polea baja']);
+      const legs2 = mkPesas('Legs B','piernas',['Sentadilla búlgara','Hip thrust con barra','Curl femoral acostado','Elevación de talones sentado','Abductor en máquina']);
+      rutina = {
+        lunes:    { grupoPrincipal:'pecho',    manana: push1, tarde: libre },
+        martes:   { grupoPrincipal:'espalda',  manana: pull1, tarde: libre },
+        miercoles:{ grupoPrincipal:'piernas',  manana: legs1, tarde: libre },
+        jueves:   { grupoPrincipal:'pecho',    manana: push2, tarde: libre },
+        viernes:  { grupoPrincipal:'espalda',  manana: pull2, tarde: libre },
+        sabado:   { grupoPrincipal:'piernas',  manana: legs2, tarde: libre },
+        domingo:  { grupoPrincipal:'descanso', ...descanso }
+      };
+    }
+  }
+
+  DATA.rutina = rutina;
+  DATA.rutinaVersion = RUTINA_VERSION;
+  DATA.onboardingDone = true;
+  saveData(DATA);
+  document.getElementById('onboardingOverlay').classList.remove('show');
+  applyName();
+  renderRoutine();
+  showToast(`¡Bienvenido${DATA.nombre ? ', '+DATA.nombre : ''}! 🎉`);
+}
+
+function checkOnboarding() {
+  if(!DATA.onboardingDone && !DATA.nombre) {
+    document.getElementById('onboardingOverlay').classList.add('show');
+  }
+}
+
+// ===== PREFERENCIA CARITAS =====
+function saveFeelingPref(on) {
+  DATA.feelingEnabled = on;
+  saveData(DATA);
+  const slider = document.getElementById('feelingToggleSlider');
+  if(slider) slider.style.background = on ? 'var(--accent)' : 'var(--border)';
+}
+
+function initFeelingToggle() {
+  const toggle = document.getElementById('feelingToggle');
+  const slider = document.getElementById('feelingToggleSlider');
+  if(!toggle) return;
+  const on = DATA.feelingEnabled !== false; // default ON
+  toggle.checked = on;
+  if(slider) slider.style.background = on ? 'var(--accent)' : 'var(--border)';
+}
+
+// ===== CARITAS POR SERIE =====
+const FEELINGS = [
+  { emoji:'😴', label:'Fácil',    val:'facil' },
+  { emoji:'💪', label:'Bien',     val:'bien' },
+  { emoji:'😤', label:'Forzado', val:'forzado' },
+  { emoji:'🔥', label:'Al límite',val:'limite' }
+];
+
+let feelingTimeout = null;
+
+function showFeelingBar(momento, exIdx, setIdx, container) {
+  // Limpiar anterior
+  const prev = container.querySelector('.feeling-bar');
+  if(prev) prev.remove();
+  if(feelingTimeout) clearTimeout(feelingTimeout);
+  if(DATA.feelingEnabled === false) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'feeling-bar';
+  bar.dataset.mom = momento;
+  bar.dataset.ex = exIdx;
+  bar.dataset.set = setIdx;
+
+  FEELINGS.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'feeling-btn';
+    btn.textContent = f.emoji;
+    btn.title = f.label;
+    btn.onclick = () => {
+      saveFeelingData(momento, exIdx, setIdx, f.val);
+      bar.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      if(feelingTimeout) clearTimeout(feelingTimeout);
+      feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(90); }, 800);
+    };
+    bar.appendChild(btn);
+  });
+
+  container.insertBefore(bar, container.querySelector('.sets-grid[data-set-row="'+setIdx+'"]')?.parentElement?.nextSibling || container.firstChild);
+  // Auto-desaparecer en 3 seg si no toca nada
+  feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(90); }, 3000);
+}
+
+function saveFeelingData(momento, exIdx, setIdx, val) {
+  const dayKey = daySelect.value;
+  const key = getTodayWorkoutKey(dayKey);
+  let w = DATA.workouts.find(w => w.key === key);
+  if(!w) return;
+  const nombreEj = DATA.rutina[dayKey]?.[momento]?.ejercicios?.[parseInt(exIdx)];
+  if(!w[momento]) w[momento] = { exercises:{} };
+  if(!w[momento].feelings) w[momento].feelings = {};
+  if(!w[momento].feelings[nombreEj]) w[momento].feelings[nombreEj] = {};
+  w[momento].feelings[nombreEj][setIdx] = val;
+  saveData(DATA);
+}
+
+function getFeelingResumen() {
+  const dayKey = daySelect.value;
+  const key = getTodayWorkoutKey(dayKey);
+  const w = DATA.workouts.find(w => w.key === key);
+  if(!w) return null;
+  const counts = { facil:0, bien:0, forzado:0, limite:0 };
+  ['manana','tarde'].forEach(mom => {
+    const feelings = w[mom]?.feelings;
+    if(!feelings) return;
+    Object.values(feelings).forEach(seriesF => {
+      Object.values(seriesF).forEach(v => { if(counts[v] !== undefined) counts[v]++; });
+    });
+  });
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if(!total) return null;
+  return counts;
+}
+
 // ===== PR (RÉCORD PERSONAL) =====
 function getPR(nombreEj) {
   let maxPeso = 0;
@@ -3389,6 +3809,20 @@ function mostrarResumen() {
     });
     html += `</div>`;
   }
+  // Feeling summary
+  if(DATA.feelingEnabled !== false) {
+    const feel = getFeelingResumen();
+    if(feel) {
+      const feelMap = { facil:'😴 Fácil', bien:'💪 Bien', forzado:'😤 Forzado', limite:'🔥 Al límite' };
+      const parts = Object.entries(feelMap)
+        .filter(([k]) => feel[k] > 0)
+        .map(([k, label]) => `<span style="font-size:13px; color:var(--text-secondary);">• ${label}: <b>${feel[k]}</b></span>`);
+      if(parts.length) {
+        html += `<div class="modal-stat" style="flex-direction:column; align-items:flex-start; gap:4px;">
+          <span style="font-weight:600;">🎯 Cómo te sentiste</span>${parts.join('')}</div>`;
+      }
+    }
+  }
   body.innerHTML = html;
   modal.classList.add('show');
 }
@@ -3413,8 +3847,17 @@ document.addEventListener('click', e => {
     if(nombreEj && pesoInput && pesoInput.value && checkPR(nombreEj, pesoInput.value)) {
       showToast(`🏆 ¡Nuevo récord en ${nombreEj}!`);
     }
-    // Iniciar timer descanso
-    startRestTimer(90);
+    // Mostrar feeling bar o ir directo al timer
+    if(DATA.feelingEnabled !== false) {
+      const exContainer = btn.closest('.card');
+      if(exContainer) {
+        showFeelingBar(mom, parseInt(exIdx), parseInt(setIdx), exContainer);
+      } else {
+        startRestTimer(90);
+      }
+    } else {
+      startRestTimer(90);
+    }
   } else {
     // Desmarcó — cancelar timer
     if(restInterval) {
