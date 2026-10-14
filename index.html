@@ -387,6 +387,20 @@
       <div id="dashEjercicios"></div>
     </div>
 
+    <!-- GRÁFICO EVOLUCIÓN POR EJERCICIO -->
+    <div class="card">
+      <div class="card-title">Evolución de peso por ejercicio</div>
+      <select id="ejGraficoSelect" style="margin-bottom:12px;"></select>
+      <canvas id="ejGraficoCanvas"></canvas>
+      <div id="ejGraficoStats" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"></div>
+    </div>
+
+    <!-- VOLUMEN POR GRUPO MUSCULAR -->
+    <div class="card">
+      <div class="card-title">Series por grupo muscular <span class="label" id="volPeriodLabel"></span></div>
+      <div id="volGrupoChart"></div>
+    </div>
+
     <!-- RESUMEN DIARIO -->
     <div class="card">
       <div class="card-title">Detalle del período</div>
@@ -2571,6 +2585,12 @@ function renderDashboard() {
     }
   }
 
+  // ===== GRÁFICO POR EJERCICIO =====
+  renderEjGrafico(workouts);
+
+  // ===== VOLUMEN POR GRUPO MUSCULAR =====
+  renderVolGrupo(workouts, periodoLabels[periodActivo]);
+
   // ===== DETALLE DIARIO =====
   const dashDiario = document.getElementById('dashDiario');
   if(dashDiario) {
@@ -2612,6 +2632,147 @@ function renderDashboard() {
       }).join('');
     }
   }
+}
+
+// ===== GRÁFICO EVOLUCIÓN POR EJERCICIO =====
+function renderEjGrafico(workouts) {
+  const sel = document.getElementById('ejGraficoSelect');
+  const statsEl = document.getElementById('ejGraficoStats');
+  if(!sel || !statsEl) return;
+
+  // Construir mapa ejercicio → [{date, peso}]
+  const mapaEj = {};
+  workouts.forEach(w => {
+    ['manana','tarde'].forEach(m => {
+      const s = w[m];
+      if(!s?.exercises) return;
+      Object.entries(s.exercises).forEach(([nombre, sets]) => {
+        const maxPeso = Math.max(...sets.map(s => parseFloat(s.peso)||0));
+        if(maxPeso <= 0) return;
+        if(!mapaEj[nombre]) mapaEj[nombre] = [];
+        mapaEj[nombre].push({date: w.date, peso: maxPeso});
+      });
+    });
+  });
+
+  // Solo ejercicios con al menos 1 registro
+  const ejercicios = Object.keys(mapaEj).sort();
+
+  if(ejercicios.length === 0) {
+    sel.innerHTML = '<option>Sin datos en este período</option>';
+    statsEl.innerHTML = '';
+    const canvas = document.getElementById('ejGraficoCanvas');
+    if(canvas) { const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+    return;
+  }
+
+  // Poblar select (solo si cambió la lista para no perder la selección)
+  const currentVal = sel.value;
+  const prevOpts = [...sel.options].map(o=>o.value).join(',');
+  const newOpts = ejercicios.join(',');
+  if(prevOpts !== newOpts) {
+    sel.innerHTML = ejercicios.map(n => `<option value="${n}">${n}</option>`).join('');
+    if(ejercicios.includes(currentVal)) sel.value = currentVal;
+  }
+
+  const ejSeleccionado = sel.value || ejercicios[0];
+  sel.value = ejSeleccionado;
+
+  // Handler cambio de selección
+  sel.onchange = () => renderEjGrafico(workouts);
+
+  // Datos del ejercicio seleccionado
+  const arr = (mapaEj[ejSeleccionado] || []).sort((a,b)=>a.date.localeCompare(b.date));
+  const chartData = arr.map(p => ({x: p.date, y: p.peso}));
+
+  drawLineChart('ejGraficoCanvas', chartData, 'lb', '#2389a0');
+
+  // Stats debajo
+  if(arr.length >= 1) {
+    const pesos = arr.map(p=>p.peso);
+    const min = Math.min(...pesos);
+    const max = Math.max(...pesos);
+    const first = arr[0].peso;
+    const last = arr[arr.length-1].peso;
+    const delta = last - first;
+    const pr = max;
+    statsEl.innerHTML = `
+      <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">
+        <div style="background:var(--card2); border-radius:8px; padding:6px 10px; flex:1; min-width:70px; text-align:center;">
+          <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">🏆 PR</div>
+          <div style="font-weight:700; color:var(--accent);">${pr} lb</div>
+        </div>
+        <div style="background:var(--card2); border-radius:8px; padding:6px 10px; flex:1; min-width:70px; text-align:center;">
+          <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">Inicio</div>
+          <div style="font-weight:700;">${first} lb</div>
+        </div>
+        <div style="background:var(--card2); border-radius:8px; padding:6px 10px; flex:1; min-width:70px; text-align:center;">
+          <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">Último</div>
+          <div style="font-weight:700;">${last} lb</div>
+        </div>
+        <div style="background:var(--card2); border-radius:8px; padding:6px 10px; flex:1; min-width:70px; text-align:center;">
+          <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">Cambio</div>
+          <div style="font-weight:700; color:${delta>=0?'var(--success)':'var(--danger)'};">${delta>=0?'+':''}${delta.toFixed(1)} lb</div>
+        </div>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${arr.length} registro${arr.length!==1?'s':''} · Mín ${min} lb · Máx ${max} lb</div>
+    `;
+  } else {
+    statsEl.innerHTML = '';
+  }
+}
+
+// ===== VOLUMEN POR GRUPO MUSCULAR =====
+function renderVolGrupo(workouts, periodoLabel) {
+  const cont = document.getElementById('volGrupoChart');
+  const labelEl = document.getElementById('volPeriodLabel');
+  if(!cont) return;
+  if(labelEl) labelEl.textContent = periodoLabel || '';
+
+  // Contar series por grupo muscular
+  const seriesPorGrupo = {};
+  workouts.forEach(w => {
+    ['manana','tarde'].forEach(m => {
+      const s = w[m];
+      if(!s?.exercises) return;
+      Object.entries(s.exercises).forEach(([nombre, sets]) => {
+        const grupo = getGrupoDeEjercicio(nombre) || 'otro';
+        if(!seriesPorGrupo[grupo]) seriesPorGrupo[grupo] = 0;
+        seriesPorGrupo[grupo] += sets.filter(s => s.completado || parseFloat(s.peso) > 0).length || sets.length;
+      });
+    });
+  });
+
+  const entries = Object.entries(seriesPorGrupo).sort((a,b)=>b[1]-a[1]);
+  if(entries.length === 0) {
+    cont.innerHTML = `<div class="empty-state">Sin series registradas en este período.</div>`;
+    return;
+  }
+
+  const maxVal = entries[0][1];
+  const GEMOJI = {piernas:'🦵',pecho:'🫀',hombros:'🏋️',espalda:'🔙',biceps:'💪',triceps:'💪',core:'🧘',cardio:'🏃',otro:'⚙️'};
+  const GCOLOR = {
+    piernas:'var(--g-piernas)', pecho:'var(--g-pecho)', hombros:'var(--g-hombros)',
+    espalda:'var(--g-espalda)', biceps:'#7c5cbf', triceps:'#5c7abf',
+    core:'#9a6f2e', cardio:'var(--g-cardio)', otro:'var(--text-muted)'
+  };
+
+  cont.innerHTML = entries.map(([grupo, total]) => {
+    const pct = Math.round((total / maxVal) * 100);
+    const color = GCOLOR[grupo] || 'var(--accent)';
+    const emoji = GEMOJI[grupo] || '💪';
+    return `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="font-weight:600;">${emoji} ${grupo.charAt(0).toUpperCase()+grupo.slice(1)}</span>
+          <span style="color:var(--text-secondary);">${total} series</span>
+        </div>
+        <div style="background:var(--card2); border-radius:6px; height:10px; overflow:hidden;">
+          <div style="height:100%; width:${pct}%; background:${color}; border-radius:6px; transition:width 0.4s ease;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ===== GRÁFICOS =====
