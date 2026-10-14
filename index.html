@@ -67,6 +67,13 @@
   .sets-grid input { padding:8px 8px; font-size:14px; text-align:center; }
   .check-btn { width:32px; height:32px; border-radius:50%; background:#fde8e8; border:1.5px solid var(--danger); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--danger); cursor:pointer; flex-shrink:0; }
   .check-btn.done { background:var(--success-light); color:var(--success); border-color:var(--success); }
+  .check-btn.disabled, .set-input.disabled { opacity:0.35; pointer-events:none; }
+  .session-banner { background:var(--accent); color:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .session-banner p { margin:0; font-size:13px; opacity:0.9; }
+  .session-banner button { background:white; color:var(--accent); border:none; border-radius:8px; padding:9px 16px; font-size:14px; font-weight:700; cursor:pointer; flex-shrink:0; }
+  .inactivity-toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#1c2530; color:white; border-radius:12px; padding:12px 20px; z-index:150; font-size:14px; display:none; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3); min-width:260px; }
+  .inactivity-toast.show { display:block; }
+  .inactivity-toast button { background:var(--accent); color:white; border:none; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; margin-top:8px; width:100%; }
   .sets-header { display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; margin-bottom:6px; }
   .sets-header span { font-size:11px; color:var(--text-muted); text-align:center; }
   .history-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:0.5px solid var(--border); font-size:13px; }
@@ -250,11 +257,19 @@
         </div>
       </div>
     </div>
+    <div id="sessionBanner" class="session-banner" style="display:none;">
+      <p>Inicia la sesión para registrar tus series</p>
+      <button onclick="document.getElementById('cronBtn').click()">▶ Iniciar</button>
+    </div>
     <div class="card">
       <div class="card-title">¿Qué día entrenas hoy?</div>
       <select id="daySelect"></select>
     </div>
     <div id="routineContent"></div>
+    <div id="inactivityToast" class="inactivity-toast">
+      ¿Sigues en el gym?<br><span id="inactivityCountdown" style="font-size:12px; opacity:0.7;"></span>
+      <button onclick="resetInactivity()">✓ Sigo entrenando</button>
+    </div>
   </div>
 
   <div class="view" id="view-peso">
@@ -1669,6 +1684,8 @@ function renderRoutine() {
     html += renderSessionBlock(dayKey, 'tarde', 'Tarde', isToday);
 
     container.innerHTML = html;
+    // Aplicar bloqueo según estado de sesión
+    actualizarBloqueoSeries();
 
     container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>{
       btn.classList.toggle('done');
@@ -3286,7 +3303,9 @@ function cronUpdateBtns() {
   const btn = document.getElementById('cronBtn');
   const reset = document.getElementById('cronReset');
   const fin = document.getElementById('cronFin');
+  const banner = document.getElementById('sessionBanner');
   if(!btn) return;
+  const sesionActiva = CRON.iniciado || CRON.acumulado > 0;
   if(CRON.terminado) {
     btn.textContent = '▶ Nueva sesión';
     btn.style.background = 'var(--accent)';
@@ -3303,11 +3322,27 @@ function cronUpdateBtns() {
     if(reset) reset.style.display = 'inline-block';
     if(fin) fin.style.display = 'inline-block';
   } else {
-    btn.textContent = '▶ Iniciar';
+    btn.textContent = '▶ Iniciar sesión';
     btn.style.background = 'var(--accent)';
     if(reset) reset.style.display = 'none';
     if(fin) fin.style.display = 'none';
   }
+  // Mostrar/ocultar banner y bloquear controles
+  if(banner) banner.style.display = sesionActiva || CRON.terminado ? 'none' : 'flex';
+  actualizarBloqueoSeries();
+}
+
+function actualizarBloqueoSeries() {
+  const sesionActiva = CRON.iniciado || CRON.acumulado > 0;
+  const habilitado = sesionActiva || CRON.terminado;
+  document.querySelectorAll('.set-input').forEach(el => {
+    if(habilitado) el.classList.remove('disabled');
+    else el.classList.add('disabled');
+  });
+  document.querySelectorAll('.check-btn').forEach(el => {
+    if(habilitado) el.classList.remove('disabled');
+    else el.classList.add('disabled');
+  });
 }
 
 function cronGuardar() {
@@ -3831,10 +3866,63 @@ document.getElementById('modalResumenClose')?.addEventListener('click', () => {
   document.getElementById('modalResumen').classList.remove('show');
 });
 
+// ===== INACTIVIDAD =====
+let lastActivity = Date.now();
+let inactivityInterval = null;
+let inactivityWarningAt = null;
+const INACTIVITY_WARN = 10 * 60 * 1000;  // 10 min sin actividad → aviso
+const INACTIVITY_CLOSE = 2 * 60 * 1000;  // 2 min más sin respuesta → cierra
+
+function resetInactivity() {
+  lastActivity = Date.now();
+  inactivityWarningAt = null;
+  const toast = document.getElementById('inactivityToast');
+  if(toast) toast.classList.remove('show');
+}
+
+function checkInactivity() {
+  if(!CRON.iniciado) return; // Solo si hay sesión activa corriendo
+  const now = Date.now();
+  const toast = document.getElementById('inactivityToast');
+  const countdown = document.getElementById('inactivityCountdown');
+  if(!inactivityWarningAt) {
+    // Sin aviso aún
+    if((now - lastActivity) >= INACTIVITY_WARN) {
+      inactivityWarningAt = now;
+      if(toast) toast.classList.add('show');
+    }
+  } else {
+    // Ya avisó — actualizar cuenta regresiva
+    const secsLeft = Math.max(0, Math.ceil((INACTIVITY_CLOSE - (now - inactivityWarningAt)) / 1000));
+    if(countdown) countdown.textContent = `Cerrando en ${secsLeft}s si no respondes`;
+    if(now - inactivityWarningAt >= INACTIVITY_CLOSE) {
+      // Cerrar sesión automáticamente
+      if(toast) toast.classList.remove('show');
+      inactivityWarningAt = null;
+      document.getElementById('cronFin')?.click();
+    }
+  }
+}
+
+// Registrar actividad al tocar inputs de series
+document.addEventListener('input', e => {
+  if(e.target.classList.contains('set-input')) resetInactivity();
+});
+
+// Arrancar/parar interval de inactividad con el cronómetro
+const _origCronTick = typeof cronTickInterval !== 'undefined';
+setInterval(checkInactivity, 5000);
+
 // Hook check-btn para activar timer de descanso y detectar PR
 document.addEventListener('click', e => {
   const btn = e.target.closest('.check-btn');
   if(!btn) return;
+  // Bloquear si no hay sesión
+  if(!CRON.iniciado && CRON.acumulado === 0 && !CRON.terminado) {
+    showToast('Primero inicia la sesión ▶');
+    return;
+  }
+  resetInactivity();
   const isDone = btn.classList.contains('done');
   if(isDone) {
     // Buscar el peso de esta serie para PR
