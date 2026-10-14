@@ -965,80 +965,68 @@ const GRUPO_COLOR = {
 function defaultRutina() {
   return {
     lunes: { grupoPrincipal:"pecho",
-      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
-      tarde: { tipo:"pesas", titulo:"Pecho y Tríceps", grupo:"pecho", ejercicios:[
+      manana: { tipo:"pesas", titulo:"Pecho + Tríceps", grupo:"pecho", ejercicios:[
         "Press banca plano con barra",
         "Press banca inclinado con mancuernas",
-        "Aperturas en banco plano con mancuernas",
-        "Cruces en polea alta a baja",
-        "Extensión de tríceps en polea (cuerda)",
+        "Press banca declinado con barra",
         "Press francés con barra",
+        "Extensión de tríceps en polea (cuerda)",
         "Fondos en banco (bench dips)"
-      ]}
+      ], series:3, reps:8},
+      tarde: { tipo:"libre", titulo:"Libre" }
     },
     martes: { grupoPrincipal:"espalda",
-      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
-      tarde: { tipo:"pesas", titulo:"Espalda y Bíceps", grupo:"espalda", ejercicios:[
+      manana: { tipo:"pesas", titulo:"Espalda + Bíceps", grupo:"espalda", ejercicios:[
         "Jalón al pecho en polea (agarre ancho)",
         "Remo con barra",
         "Remo en polea baja (agarre estrecho)",
-        "Hiperextensiones (lumbares)",
         "Curl de bíceps con barra recta",
         "Curl martillo",
-        "Curl en polea baja"
-      ]}
+        "Curl concentrado"
+      ], series:3, reps:8},
+      tarde: { tipo:"libre", titulo:"Libre" }
     },
-    miercoles: { grupoPrincipal:"piernas",
+    miercoles: { grupoPrincipal:"descanso",
+      manana: { tipo:"descanso", titulo:"Descanso" },
+      tarde: { tipo:"descanso", titulo:"Descanso" }
+    },
+    jueves: { grupoPrincipal:"hombros",
+      manana: { tipo:"pesas", titulo:"Hombros + Tríceps", grupo:"hombros", ejercicios:[
+        "Press militar con mancuernas",
+        "Elevaciones laterales con mancuernas",
+        "Pájaros con mancuernas (deltoide posterior)",
+        "Extensión sobre la cabeza en polea",
+        "Press francés con mancuerna",
+        "Extensión de tríceps en polea (barra recta)"
+      ], series:3, reps:8},
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    viernes: { grupoPrincipal:"pecho",
+      manana: { tipo:"pesas", titulo:"Pecho + Bíceps", grupo:"pecho", ejercicios:[
+        "Press de pecho en máquina (Chest Press)",
+        "Press banca inclinado con mancuernas",
+        "Aperturas en máquina (pec-deck)",
+        "Curl con mancuernas alternado",
+        "Curl en banco scott con barra",
+        "Curl en polea baja"
+      ], series:3, reps:8},
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    sabado: { grupoPrincipal:"cardio",
+      manana: { tipo:"cardio", titulo:"Trote largo", detalle:"5 millas, ritmo variable 7-9" },
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    domingo: { grupoPrincipal:"piernas",
       manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
       tarde: { tipo:"pesas", titulo:"Piernas", grupo:"piernas", ejercicios:[
         "Sentadilla con barra",
-        "Prensa de piernas (pies juntos)",
+        "Prensa de piernas (pies separados)",
         "Extensión de cuádriceps",
         "Peso muerto rumano con barra",
         "Curl femoral acostado",
         "Hip thrust con barra",
         "Elevación de talones de pie en máquina"
-      ]}
-    },
-    jueves: { grupoPrincipal:"hombros",
-      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
-      tarde: { tipo:"pesas", titulo:"Hombros y Tríceps", grupo:"hombros", ejercicios:[
-        "Press militar con mancuernas",
-        "Elevaciones laterales con mancuernas",
-        "Pájaros con mancuernas (deltoide posterior)",
-        "Face pull en polea",
-        "Extensión sobre la cabeza en polea",
-        "Patada de tríceps con mancuerna",
-        "Fondos en paralelas (tríceps)"
-      ]}
-    },
-    viernes: { grupoPrincipal:"pecho",
-      manana: { tipo:"cardio", titulo:"Trote", detalle:"3 millas, ritmo 7-7.5" },
-      tarde: { tipo:"pesas", titulo:"Pecho y Bíceps", grupo:"pecho", ejercicios:[
-        "Press banca declinado con barra",
-        "Press inclinado en máquina",
-        "Aperturas en máquina (pec-deck)",
-        "Flexiones de pecho (push-ups)",
-        "Curl con mancuernas alternado",
-        "Curl concentrado",
-        "Curl en banco scott con barra"
-      ]}
-    },
-    sabado: { grupoPrincipal:"piernas",
-      manana: { tipo:"cardio", titulo:"Trote largo", detalle:"5 millas, ritmo variable 7-9" },
-      tarde: { tipo:"pesas", titulo:"Piernas y Hombros", grupo:"piernas", ejercicios:[
-        "Sentadilla goblet",
-        "Prensa de piernas (pies separados)",
-        "Sentadilla búlgara",
-        "Elevación de talones sentado",
-        "Press Arnold",
-        "Elevaciones laterales en polea",
-        "Encogimientos con barra"
-      ]}
-    },
-    domingo: { grupoPrincipal:"descanso",
-      manana: { tipo:"descanso", titulo:"Descanso" },
-      tarde: { tipo:"descanso", titulo:"Descanso" }
+      ], series:3, reps:8}
     }
   };
 }
@@ -1062,7 +1050,7 @@ function saveData(d) {
 let DATA = loadData();
 if(!DATA.rutina) DATA.rutina = defaultRutina();
 // Versión del plan — si cambió, actualiza la rutina pero NO el historial
-const RUTINA_VERSION = 3; // incrementar cada vez que cambie el plan
+const RUTINA_VERSION = 4; // incrementar cada vez que cambie el plan
 if(!DATA.rutinaVersion || DATA.rutinaVersion < RUTINA_VERSION) {
   DATA.rutina = defaultRutina();
   DATA.rutinaVersion = RUTINA_VERSION;
