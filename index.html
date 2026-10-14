@@ -68,6 +68,77 @@
   .check-btn { width:32px; height:32px; border-radius:50%; background:#fde8e8; border:1.5px solid var(--danger); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--danger); cursor:pointer; flex-shrink:0; }
   .check-btn.done { background:var(--success-light); color:var(--success); border-color:var(--success); }
   .check-btn.disabled, .set-input.disabled { opacity:0.35; pointer-events:none; }
+
+  /* PR badge */
+  .pr-badge {
+    display:inline-flex; align-items:center; gap:3px;
+    background:linear-gradient(135deg,#fff8e6,#ffedc0);
+    border:1px solid #f0c040; border-radius:20px;
+    padding:2px 9px; font-size:11px; font-weight:700;
+    color:#b8841f; letter-spacing:0.01em; flex-shrink:0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .pr-badge-empty { background:var(--card2); border-color:var(--border); color:var(--text-muted); }
+  .pr-badge.pr-nuevo {
+    animation: pr-glow 0.6s ease forwards;
+    background:linear-gradient(135deg,#ffe566,#ffc107);
+    color:#7a4f00; border-color:#e6a800;
+  }
+  @keyframes pr-glow {
+    0%   { transform:scale(1); box-shadow:none; }
+    40%  { transform:scale(1.18); box-shadow:0 0 12px rgba(240,160,0,0.6); }
+    70%  { transform:scale(1.08); }
+    100% { transform:scale(1); box-shadow:0 0 6px rgba(240,160,0,0.25); }
+  }
+
+  /* Partículas PR */
+  .pr-particle {
+    position:fixed; pointer-events:none; z-index:999;
+    border-radius:50%; animation: particle-rise 1.2s ease-out forwards;
+  }
+  @keyframes particle-rise {
+    0%   { opacity:1; transform:translate(0,0) scale(1); }
+    100% { opacity:0; transform:translate(var(--tx), var(--ty)) scale(0.3); }
+  }
+
+  /* Selector de acento y tema */
+  .accent-dot {
+    width:28px; height:28px; border-radius:50%; cursor:pointer;
+    border:3px solid transparent; transition:transform 0.15s, border-color 0.15s;
+  }
+  .accent-dot.active { border-color:var(--text); transform:scale(1.15); }
+  .theme-btn { padding:6px 10px; font-size:12px; }
+  .theme-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+
+  /* Modo oscuro automático */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#0d1117; --card:#161b22; --card2:#1c2230;
+      --border:#2a3240; --text:#e6edf3; --text-secondary:#8b949e;
+      --text-muted:#6a737d; --accent-light:#0d2a30;
+      --success-light:#0d2a1a; --accent-bright:#1c7488;
+    }
+    :root:not([data-theme="light"]) .pr-badge {
+      background:linear-gradient(135deg,#2a2000,#3d2f00);
+      border-color:#7a5a00; color:#f0c040;
+    }
+    :root:not([data-theme="light"]) .pr-badge.pr-nuevo {
+      background:linear-gradient(135deg,#4a3800,#6b5000);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#0d1117; --card:#161b22; --card2:#1c2230;
+    --border:#2a3240; --text:#e6edf3; --text-secondary:#8b949e;
+    --text-muted:#6a737d; --accent-light:#0d2a30;
+    --success-light:#0d2a1a; --accent-bright:#1c7488;
+  }
+  :root[data-theme="dark"] .pr-badge {
+    background:linear-gradient(135deg,#2a2000,#3d2f00);
+    border-color:#7a5a00; color:#f0c040;
+  }
+  :root[data-theme="dark"] .pr-badge.pr-nuevo {
+    background:linear-gradient(135deg,#4a3800,#6b5000);
+  }
   .session-banner { background:var(--accent); color:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .session-banner p { margin:0; font-size:13px; opacity:0.9; }
   .session-banner button { background:white; color:var(--accent); border:none; border-radius:8px; padding:9px 16px; font-size:14px; font-weight:700; cursor:pointer; flex-shrink:0; }
@@ -447,6 +518,33 @@
         <input type="text" id="nameInput" placeholder="Tu nombre (ej. Fabián)">
       </div>
       <button class="btn-primary" id="saveNameBtn">Guardar nombre</button>
+      <!-- Modo oscuro -->
+      <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:14px; font-weight:600;">🌙 Modo oscuro</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Automático según tu iPhone</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button id="themeAuto"  onclick="setTheme('auto')"  class="btn-ghost btn-small theme-btn">Auto</button>
+          <button id="themeLight" onclick="setTheme('light')" class="btn-ghost btn-small theme-btn">☀️</button>
+          <button id="themeDark"  onclick="setTheme('dark')"  class="btn-ghost btn-small theme-btn">🌙</button>
+        </div>
+      </div>
+
+      <!-- Color de acento -->
+      <div style="margin-top:14px;">
+        <div style="font-size:14px; font-weight:600; margin-bottom:8px;">🎨 Color de acento</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;" id="accentPicker">
+          <div class="accent-dot" data-color="#2389a0" style="background:#2389a0;" title="Azul (default)" onclick="setAccent('#2389a0')"></div>
+          <div class="accent-dot" data-color="#2e9a5c" style="background:#2e9a5c;" title="Verde" onclick="setAccent('#2e9a5c')"></div>
+          <div class="accent-dot" data-color="#7c5cbf" style="background:#7c5cbf;" title="Morado" onclick="setAccent('#7c5cbf')"></div>
+          <div class="accent-dot" data-color="#d0563f" style="background:#d0563f;" title="Rojo" onclick="setAccent('#d0563f')"></div>
+          <div class="accent-dot" data-color="#b8841f" style="background:#b8841f;" title="Dorado" onclick="setAccent('#b8841f')"></div>
+          <div class="accent-dot" data-color="#3470b0" style="background:#3470b0;" title="Azul royal" onclick="setAccent('#3470b0')"></div>
+        </div>
+      </div>
+
+      <!-- Caritas -->
       <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
         <div>
           <div style="font-size:14px; font-weight:600;">😤 Caritas por serie</div>
@@ -1621,10 +1719,14 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
       const hasVisual = hasSvg || customImg;
       let grupoEj = 'piernas';
       for(const g in BANCO_EJERCICIOS) { if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombreEj)) { grupoEj=g; break; } }
-      html += `<div class="exercise-row" data-ex-idx="${exIdx}" data-momento-row="${momento}">`;
+      const prActual = getPR(nombreEj);
+      html += `<div class="exercise-row" data-ex-idx="${exIdx}" data-momento-row="${momento}" data-ex-name="${nombreEj}">`;
       html += `<div class="exercise-header">
         <div style="flex:1; min-width:0;">
-          <div class="exercise-name">${nombreEj}</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div class="exercise-name">${nombreEj}</div>
+            ${prActual > 0 ? `<div class="pr-badge" data-pr="${prActual}">🏆 ${prActual} lb</div>` : `<div class="pr-badge pr-badge-empty">🏆 –</div>`}
+          </div>
           ${def.en ? `<div style="font-size:11px; color:var(--text-muted); font-style:italic;">${def.en}</div>` : ''}
           <div class="exercise-target">${def.target}${def.musculo ? ' · '+def.musculo : ''}</div>
         </div>
@@ -1862,6 +1964,7 @@ loadAllImages().then(() => {
   renderHeaderDate();
   checkOnboarding();
   initFeelingToggle();
+  initThemeAndAccent();
 });
 
 // ===== PESO =====
@@ -3929,6 +4032,47 @@ function checkPR(nombreEj, peso) {
   return pr > 0 && parseFloat(peso) > pr;
 }
 
+function lanzarParticulasPR(targetEl) {
+  if(!targetEl) return;
+  const rect = targetEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const colores = ['#f0c040','#ffd700','#ffec6e','#fff0a0','#e6a800'];
+  for(let i = 0; i < 22; i++) {
+    const p = document.createElement('div');
+    p.className = 'pr-particle';
+    const size = 5 + Math.random() * 7;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * 100;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${cx}px; top:${cy}px;
+      background:${colores[Math.floor(Math.random()*colores.length)]};
+      --tx:${Math.cos(angle)*dist}px;
+      --ty:${Math.sin(angle)*dist - 40}px;
+      animation-delay:${Math.random()*0.15}s;
+      animation-duration:${0.9+Math.random()*0.5}s;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1800);
+  }
+}
+
+function actualizarBadgePR(nombreEj, nuevoPeso) {
+  // Buscar el badge en el DOM y actualizarlo
+  const rows = document.querySelectorAll(`.exercise-row[data-ex-name="${nombreEj}"]`);
+  rows.forEach(row => {
+    const badge = row.querySelector('.pr-badge');
+    if(badge) {
+      badge.textContent = `🏆 ${nuevoPeso} lb`;
+      badge.classList.remove('pr-badge-empty');
+      badge.classList.add('pr-nuevo');
+      lanzarParticulasPR(badge);
+      setTimeout(() => badge.classList.remove('pr-nuevo'), 1000);
+    }
+  });
+}
+
 // ===== TIMER DE DESCANSO =====
 let restInterval = null;
 let restSegsLeft = 0;
@@ -4070,6 +4214,70 @@ document.addEventListener('input', e => {
   if(e.target.classList.contains('set-input')) resetInactivity();
 });
 
+// ===== TEMA Y COLOR DE ACENTO =====
+function setTheme(mode) {
+  DATA.theme = mode;
+  saveData(DATA);
+  if(mode === 'auto') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', mode);
+  }
+  // Actualizar botones activos
+  ['Auto','Light','Dark'].forEach(t => {
+    const btn = document.getElementById('theme'+t);
+    if(btn) btn.classList.toggle('active', mode === t.toLowerCase());
+  });
+}
+
+function setAccent(color) {
+  DATA.accentColor = color;
+  saveData(DATA);
+  document.documentElement.style.setProperty('--accent', color);
+  // Calcular versión oscura del acento (20% más oscura)
+  document.documentElement.style.setProperty('--accent-bright', adjustColor(color, -25));
+  document.documentElement.style.setProperty('--accent-light', hexToRgba(color, 0.12));
+  // Actualizar dots
+  document.querySelectorAll('.accent-dot').forEach(d => {
+    d.classList.toggle('active', d.dataset.color === color);
+  });
+}
+
+function adjustColor(hex, amount) {
+  const r = Math.max(0,Math.min(255,parseInt(hex.slice(1,3),16)+amount));
+  const g = Math.max(0,Math.min(255,parseInt(hex.slice(3,5),16)+amount));
+  const b = Math.max(0,Math.min(255,parseInt(hex.slice(5,7),16)+amount));
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function hexToRgba(hex, alpha) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function initThemeAndAccent() {
+  // Aplicar tema guardado
+  const mode = DATA.theme || 'auto';
+  if(mode !== 'auto') document.documentElement.setAttribute('data-theme', mode);
+  ['Auto','Light','Dark'].forEach(t => {
+    const btn = document.getElementById('theme'+t);
+    if(btn) btn.classList.toggle('active', mode === t.toLowerCase());
+  });
+  // Aplicar color de acento guardado
+  const color = DATA.accentColor;
+  if(color) {
+    document.documentElement.style.setProperty('--accent', color);
+    document.documentElement.style.setProperty('--accent-bright', adjustColor(color, -25));
+    document.documentElement.style.setProperty('--accent-light', hexToRgba(color, 0.12));
+    document.querySelectorAll('.accent-dot').forEach(d => {
+      d.classList.toggle('active', d.dataset.color === color);
+    });
+  } else {
+    const defaultDot = document.querySelector('.accent-dot[data-color="#2389a0"]');
+    if(defaultDot) defaultDot.classList.add('active');
+  }
+}
+
 // Arrancar/parar interval de inactividad con el cronómetro
 const _origCronTick = typeof cronTickInterval !== 'undefined';
 setInterval(checkInactivity, 5000);
@@ -4094,7 +4302,9 @@ document.addEventListener('click', e => {
     const nombreEj = DATA.rutina[dayKey]?.[mom]?.ejercicios?.[parseInt(exIdx)];
     const pesoInput = document.querySelector(`.set-input[data-momento="${mom}"][data-ex="${exIdx}"][data-set="${setIdx}"][data-field="peso"]`);
     if(nombreEj && pesoInput && pesoInput.value && checkPR(nombreEj, pesoInput.value)) {
-      showToast(`🏆 ¡Nuevo récord en ${nombreEj}!`);
+      const nuevoPeso = parseFloat(pesoInput.value);
+      actualizarBadgePR(nombreEj, nuevoPeso);
+      showToast(`🏆 ¡Nuevo PR! ${nombreEj} · ${nuevoPeso} lb`);
     }
     // Mostrar feeling bar o ir directo al timer
     if(DATA.feelingEnabled !== false) {
