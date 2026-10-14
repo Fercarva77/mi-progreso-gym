@@ -85,6 +85,21 @@
   .nav-item { flex:1; text-align:center; padding:6px 0; color:var(--text-muted); font-size:11px; cursor:pointer; }
   .nav-item .nav-icon { font-size:20px; display:block; margin-bottom:2px; }
   .nav-item.active { color:var(--accent); }
+  /* Timer descanso */
+  .rest-timer { position:fixed; top:0; left:0; right:0; background:var(--accent); color:white; text-align:center; padding:10px 16px; z-index:100; display:none; cursor:pointer; }
+  .rest-timer.show { display:block; }
+  .rest-timer-inner { display:flex; align-items:center; justify-content:center; gap:12px; }
+  .rest-timer-secs { font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .rest-timer-label { font-size:12px; opacity:0.85; }
+  /* Modal resumen */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.show { display:flex; }
+  .modal-box { background:var(--card); border-radius:var(--radius); padding:20px; width:100%; max-width:360px; }
+  .modal-title { font-size:18px; font-weight:700; margin-bottom:16px; text-align:center; }
+  .modal-stat { display:flex; justify-content:space-between; padding:10px 0; border-top:0.5px solid var(--border); font-size:14px; }
+  .modal-stat:first-of-type { border-top:none; }
+  .modal-stat-val { font-weight:700; color:var(--accent); }
+  .pr-badge { display:inline-block; background:#ffd700; color:#7a5c00; font-size:10px; font-weight:700; padding:2px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; }
   .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--success); color:white; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; transition:all 0.25s ease; pointer-events:none; z-index:50; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:4px; }
@@ -99,6 +114,24 @@
 </style>
 </head>
 <body>
+<!-- Timer de descanso -->
+<div class="rest-timer" id="restTimer">
+  <div class="rest-timer-inner">
+    <div>
+      <div class="rest-timer-label">Descanso — toca para cerrar</div>
+      <div class="rest-timer-secs" id="restTimerSecs">90</div>
+    </div>
+    <div style="font-size:32px;">⏱️</div>
+  </div>
+</div>
+<!-- Modal resumen sesión -->
+<div class="modal-overlay" id="modalResumen">
+  <div class="modal-box">
+    <div class="modal-title">🏁 Sesión completada</div>
+    <div id="modalResumenBody"></div>
+    <button class="btn-primary" style="margin-top:16px;" id="modalResumenClose">Cerrar</button>
+  </div>
+</div>
 <div class="header">
   <h1 id="appTitle">Carvajal</h1>
   <div class="sub" id="dateLabel"></div>
@@ -3217,7 +3250,8 @@ document.getElementById('cronBtn')?.addEventListener('click', () => {
 
 // Botón terminar entrenamiento
 document.getElementById('cronFin')?.addEventListener('click', () => {
-  if(!confirm('¿Terminar el entrenamiento? Se guardará el tiempo total.')) return;
+  // Guardar primero el estado actual de los ejercicios
+  autoGuardarRutina();
   CRON.acumulado = cronGetSegundos();
   CRON.iniciado = false;
   CRON.startTime = null;
@@ -3225,9 +3259,10 @@ document.getElementById('cronFin')?.addEventListener('click', () => {
   cronSave(CRON);
   clearInterval(cronTickInterval);
   cronGuardar();
-  showToast(`Sesión terminada: ${cronFormat(CRON.acumulado)} ✓`);
   cronUpdateDisplay();
   cronUpdateBtns();
+  // Mostrar modal de resumen
+  mostrarResumen();
 });
 
 // Botón reiniciar
@@ -3255,6 +3290,138 @@ document.getElementById('cronReset')?.addEventListener('click', () => {
 document.addEventListener('visibilitychange', () => {
   if(!document.hidden) {
     cronUpdateDisplay();
+  }
+});
+
+// ===== PR (RÉCORD PERSONAL) =====
+function getPR(nombreEj) {
+  let maxPeso = 0;
+  DATA.workouts.forEach(w => {
+    ['manana','tarde'].forEach(mom => {
+      const sets = w[mom]?.exercises?.[nombreEj];
+      if(sets) sets.forEach(s => {
+        const p = parseFloat(s.peso);
+        if(!isNaN(p) && p > maxPeso) maxPeso = p;
+      });
+    });
+  });
+  return maxPeso;
+}
+
+function checkPR(nombreEj, peso) {
+  const pr = getPR(nombreEj);
+  return pr > 0 && parseFloat(peso) > pr;
+}
+
+// ===== TIMER DE DESCANSO =====
+let restInterval = null;
+let restSegsLeft = 0;
+
+function startRestTimer(segs) {
+  if(restInterval) clearInterval(restInterval);
+  restSegsLeft = segs;
+  const timer = document.getElementById('restTimer');
+  const display = document.getElementById('restTimerSecs');
+  timer.classList.add('show');
+  display.textContent = restSegsLeft;
+  restInterval = setInterval(() => {
+    restSegsLeft--;
+    display.textContent = restSegsLeft;
+    if(restSegsLeft <= 0) {
+      clearInterval(restInterval);
+      restInterval = null;
+      timer.classList.remove('show');
+      // Vibrar si el dispositivo lo soporta
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
+      showToast('¡Descanso terminado! 💪');
+    }
+  }, 1000);
+}
+
+document.getElementById('restTimer')?.addEventListener('click', () => {
+  if(restInterval) clearInterval(restInterval);
+  restInterval = null;
+  document.getElementById('restTimer').classList.remove('show');
+});
+
+// ===== RESUMEN AL TERMINAR SESIÓN =====
+function calcResumenSesion() {
+  const dayKey = daySelect.value;
+  const key = getTodayWorkoutKey(dayKey);
+  const w = DATA.workouts.find(w => w.key === key);
+  if(!w) return null;
+  let totalSeries = 0, seriesDone = 0, volumenLbs = 0, prs = [];
+  ['manana','tarde'].forEach(mom => {
+    const exs = w[mom]?.exercises;
+    if(!exs) return;
+    Object.entries(exs).forEach(([nombre, sets]) => {
+      if(!sets) return;
+      sets.forEach(s => {
+        totalSeries++;
+        if(s.done) seriesDone++;
+        const p = parseFloat(s.peso), r = parseFloat(s.reps);
+        if(!isNaN(p) && !isNaN(r)) volumenLbs += p * r;
+        // Verificar PR en series completadas
+        if(s.done && checkPR(nombre, s.peso)) prs.push({nombre, peso: s.peso});
+      });
+    });
+  });
+  return { totalSeries, seriesDone, volumenLbs: Math.round(volumenLbs), prs, duracion: CRON.acumulado };
+}
+
+function mostrarResumen() {
+  const res = calcResumenSesion();
+  const modal = document.getElementById('modalResumen');
+  const body = document.getElementById('modalResumenBody');
+  if(!res) { modal.classList.add('show'); body.innerHTML = '<div class="empty-state">No hay datos registrados hoy.</div>'; return; }
+  const mins = Math.floor(res.duracion / 60);
+  const secs = res.duracion % 60;
+  let html = `
+    <div class="modal-stat"><span>⏱ Tiempo</span><span class="modal-stat-val">${mins}m ${secs}s</span></div>
+    <div class="modal-stat"><span>📋 Series completadas</span><span class="modal-stat-val">${res.seriesDone} / ${res.totalSeries}</span></div>
+    <div class="modal-stat"><span>🏋️ Volumen total</span><span class="modal-stat-val">${res.volumenLbs.toLocaleString()} lb</span></div>
+  `;
+  if(res.prs.length > 0) {
+    html += `<div class="modal-stat" style="flex-direction:column; align-items:flex-start; gap:4px;">
+      <span style="font-weight:600; color:#b8841f;">🏆 Récords personales hoy</span>`;
+    res.prs.forEach(pr => {
+      html += `<span style="font-size:13px; color:var(--text-secondary);">• ${pr.nombre}: <b>${pr.peso} lb</b></span>`;
+    });
+    html += `</div>`;
+  }
+  body.innerHTML = html;
+  modal.classList.add('show');
+}
+
+document.getElementById('modalResumenClose')?.addEventListener('click', () => {
+  document.getElementById('modalResumen').classList.remove('show');
+});
+
+// Hook check-btn para activar timer de descanso y detectar PR
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.check-btn');
+  if(!btn) return;
+  const isDone = btn.classList.contains('done');
+  if(isDone) {
+    // Buscar el peso de esta serie para PR
+    const mom = btn.dataset.momento;
+    const exIdx = btn.dataset.ex;
+    const setIdx = btn.dataset.set;
+    const dayKey = daySelect.value;
+    const nombreEj = DATA.rutina[dayKey]?.[mom]?.ejercicios?.[parseInt(exIdx)];
+    const pesoInput = document.querySelector(`.set-input[data-momento="${mom}"][data-ex="${exIdx}"][data-set="${setIdx}"][data-field="peso"]`);
+    if(nombreEj && pesoInput && pesoInput.value && checkPR(nombreEj, pesoInput.value)) {
+      showToast(`🏆 ¡Nuevo récord en ${nombreEj}!`);
+    }
+    // Iniciar timer descanso
+    startRestTimer(90);
+  } else {
+    // Desmarcó — cancelar timer
+    if(restInterval) {
+      clearInterval(restInterval);
+      restInterval = null;
+      document.getElementById('restTimer').classList.remove('show');
+    }
   }
 });
 
