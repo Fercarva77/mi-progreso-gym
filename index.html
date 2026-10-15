@@ -8,6 +8,112 @@
 <title>Carvajal Gym</title>
 <meta name="apple-mobile-web-app-title" content="Carvajal">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj4KICA8cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMGEwZjE0Ii8+CiAgPHRleHQgeD0iOTAiIHk9IjEyNSIgZm9udC1mYW1pbHk9InN5c3RlbS11aSwtYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMjM4OWEwIj5DPC90ZXh0PgogIDx0ZXh0IHg9IjkwIiB5PSIxNTgiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNWI2YjdhIj5HWU08L3RleHQ+Cjwvc3ZnPg==">
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7HhNqUCO2_ve6JHagsQAcxfyId5e3Dqo",
+    authDomain: "gym-fc.firebaseapp.com",
+    projectId: "gym-fc",
+    storageBucket: "gym-fc.firebasestorage.app",
+    messagingSenderId: "206088284696",
+    appId: "1:206088284696:web:fdc9647d57665590d5f16d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  let currentUser = null;
+  let firestoreUnsub = null;
+
+  // ── Auth state ──
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    updateAuthUI(user);
+    if(user) {
+      syncFromFirestore(user.uid);
+    } else {
+      if(firestoreUnsub) { firestoreUnsub(); firestoreUnsub = null; }
+    }
+  });
+
+  // ── Sync desde Firestore al DATA local ──
+  function syncFromFirestore(uid) {
+    const ref = doc(db, 'users', uid, 'gym', 'data');
+    if(firestoreUnsub) firestoreUnsub();
+    firestoreUnsub = onSnapshot(ref, snap => {
+      if(snap.exists()) {
+        const remote = snap.data();
+        // Merge inteligente: remoto gana si tiene más datos
+        if(remote.workouts && remote.workouts.length >= (window.DATA?.workouts?.length||0)) {
+          window.DATA = Object.assign(window.DATA||{}, remote);
+          try { localStorage.setItem('carvajalGymData_v1', JSON.stringify(window.DATA)); } catch(e){}
+          if(typeof window.renderRoutine === 'function') window.renderRoutine();
+          if(typeof window.renderHeaderDate === 'function') window.renderHeaderDate();
+        }
+      }
+    });
+  }
+
+  // ── Guardar en Firestore ──
+  window.saveToFirestore = async function(data) {
+    if(!currentUser) return;
+    try {
+      const clean = Object.assign({}, data);
+      delete clean.exerciseImages;
+      delete clean.groupImages;
+      const ref = doc(db, 'users', currentUser.uid, 'gym', 'data');
+      await setDoc(ref, clean, { merge: true });
+    } catch(e) { console.warn('Firestore write error:', e); }
+  };
+
+  // ── Login / Logout ──
+  window.loginGoogle = async function() {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      if(e.code !== 'auth/popup-closed-by-user') {
+        alert('Error al iniciar sesión: ' + e.message);
+      }
+    }
+  };
+
+  window.logoutFirebase = async function() {
+    if(firestoreUnsub) { firestoreUnsub(); firestoreUnsub = null; }
+    await signOut(auth);
+  };
+
+  // ── UI del botón de cuenta ──
+  function updateAuthUI(user) {
+    const btn = document.getElementById('authBtn');
+    const avatar = document.getElementById('authAvatar');
+    if(!btn) return;
+    if(user) {
+      btn.title = user.email;
+      if(avatar) {
+        avatar.src = user.photoURL || '';
+        avatar.style.display = user.photoURL ? 'block' : 'none';
+      }
+      btn.innerHTML = user.photoURL
+        ? `<img id="authAvatar" src="${user.photoURL}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
+        : `<span style="font-size:18px;">👤</span>`;
+      btn.onclick = () => {
+        if(confirm(`Sesión iniciada como ${user.email}\n\n¿Cerrar sesión?`)) window.logoutFirebase();
+      };
+    } else {
+      btn.innerHTML = `<span style="font-size:13px;font-weight:600;">Entrar</span>`;
+      btn.onclick = () => window.loginGoogle();
+    }
+  }
+</script>
+
 <style>
   :root {
     --bg: #f5f7fa; --card: #ffffff; --card2: #f0f3f7; --border: #dde3ea;
@@ -298,9 +404,14 @@
     </div>
   </div>
 </div>
-<div class="header">
-  <h1 id="appTitle">Carvajal</h1>
-  <div class="sub" id="dateLabel"></div>
+<div class="header" style="display:flex; align-items:center; justify-content:space-between;">
+  <div>
+    <h1 id="appTitle">Carvajal</h1>
+    <div class="sub" id="dateLabel"></div>
+  </div>
+  <button id="authBtn" style="background:var(--card2); border:0.5px solid var(--border); border-radius:20px; padding:6px 12px; display:flex; align-items:center; gap:6px; cursor:pointer; min-width:60px; justify-content:center;">
+    <span style="font-size:13px; font-weight:600;">Entrar</span>
+  </button>
 </div>
 <div class="container">
   <div class="tabs">
@@ -1304,6 +1415,8 @@ function saveData(d) {
   delete clean.exerciseImages;
   delete clean.groupImages;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clean)); } catch(e) { console.error('Error guardando datos:', e); }
+  // Sincronizar con Firebase si hay sesión activa
+  if(typeof window.saveToFirestore === 'function') window.saveToFirestore(clean);
 }
 let DATA = loadData();
 if(!DATA.rutina) DATA.rutina = defaultRutina();
