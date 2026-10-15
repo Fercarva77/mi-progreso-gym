@@ -3807,7 +3807,6 @@ document.getElementById('cronBtn')?.addEventListener('click', () => {
 
 // Botón terminar entrenamiento
 document.getElementById('cronFin')?.addEventListener('click', () => {
-  // Guardar primero el estado actual de los ejercicios
   autoGuardarRutina();
   CRON.acumulado = cronGetSegundos();
   CRON.iniciado = false;
@@ -3818,7 +3817,12 @@ document.getElementById('cronFin')?.addEventListener('click', () => {
   cronGuardar();
   cronUpdateDisplay();
   cronUpdateBtns();
-  // Mostrar modal de resumen
+  // Cancelar timer de descanso si está corriendo
+  if(restInterval) { clearInterval(restInterval); restInterval = null; }
+  const rt = document.getElementById('restTimer');
+  if(rt) rt.classList.remove('show');
+  const fp = document.getElementById('feelingPopup');
+  if(fp) fp.remove();
   mostrarResumen();
 });
 
