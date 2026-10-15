@@ -51,13 +51,17 @@
     firestoreUnsub = onSnapshot(ref, snap => {
       if(snap.exists()) {
         const remote = snap.data();
-        // Merge inteligente: remoto gana si tiene más datos
-        if(remote.workouts && remote.workouts.length >= (window.DATA?.workouts?.length||0)) {
-          window.DATA = Object.assign(window.DATA||{}, remote);
-          try { localStorage.setItem('carvajalGymData_v1', JSON.stringify(window.DATA)); } catch(e){}
-          if(typeof window.renderRoutine === 'function') window.renderRoutine();
-          if(typeof window.renderHeaderDate === 'function') window.renderHeaderDate();
-        }
+        // Firebase siempre gana — es la fuente de verdad
+        window.DATA = Object.assign(window.DATA||{}, remote);
+        try { localStorage.setItem('carvajalGymData_v1', JSON.stringify(window.DATA)); } catch(e){}
+        // Refrescar toda la UI
+        setTimeout(() => {
+          if(typeof window.renderApp === 'function') window.renderApp();
+          else if(typeof window.renderRoutine === 'function') {
+            window.renderRoutine();
+            if(typeof window.renderHeaderDate === 'function') window.renderHeaderDate();
+          }
+        }, 100);
       }
     });
   }
@@ -1738,7 +1742,7 @@ function setView(view) {
 }
 document.querySelectorAll('.tab,.nav-item').forEach(el=>el.addEventListener('click',()=>setView(el.dataset.view)));
 
-function renderHeaderDate() {
+window.renderHeaderDate = function renderHeaderDate() {
   const d=new Date();
   const dias=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
   const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -1903,7 +1907,7 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
   return html;
 }
 
-function renderRoutine() {
+window.renderRoutine = function renderRoutine() {
   const container = document.getElementById('routineContent');
   try {
     const dayKey = daySelect.value;
