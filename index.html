@@ -670,6 +670,20 @@
           <span id="feelingToggleSlider" style="position:absolute; inset:0; background:var(--border); border-radius:13px; cursor:pointer; transition:0.2s;"></span>
         </label>
       </div>
+      <!-- Tiempo de descanso -->
+      <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:14px; font-weight:600;">⏱️ Descanso entre series</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Segundos que esperas entre cada serie</div>
+        </div>
+        <select id="restSecsSelect" style="padding:6px 10px; border-radius:8px; border:1.5px solid var(--border); background:var(--card2); font-size:14px; font-weight:600;" onchange="saveRestSecs(this.value)">
+          <option value="30">30 seg</option>
+          <option value="60">60 seg</option>
+          <option value="90" selected>90 seg</option>
+          <option value="120">2 min</option>
+          <option value="180">3 min</option>
+        </select>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Agregar ejercicio nuevo</div>
@@ -1921,12 +1935,30 @@ window.renderRoutine = function renderRoutine() {
     actualizarBloqueoSeries();
 
     container.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      const alreadyDone = btn.classList.contains('done');
+      if(!alreadyDone) {
+        // Validar que tenga reps antes de marcar
+        const mom = btn.dataset.momento, exI = btn.dataset.ex, setI = btn.dataset.set;
+        const repsInput = document.querySelector(`.set-input[data-momento="${mom}"][data-ex="${exI}"][data-set="${setI}"][data-field="reps"]`);
+        if(repsInput && !repsInput.value) {
+          showToast('⚠️ Ingresa las repeticiones primero');
+          repsInput.focus();
+          return;
+        }
+      }
       btn.classList.toggle('done');
-      // Autoguardar al marcar/desmarcar una serie
       autoGuardarRutina();
-      // Feedback visual breve
       const wasDone = btn.classList.contains('done');
-      if(wasDone) showToast('Serie ✓ guardada');
+      if(wasDone) {
+        showToast('Serie ✓ guardada');
+        // Si es la última serie del día, no arrancar timer
+        const todasSeries = container.querySelectorAll('.check-btn');
+        const todasDone = Array.from(todasSeries).every(b => b.classList.contains('done'));
+        if(todasDone) {
+          showToast('💪 ¡Todas las series completadas!');
+          return; // No arranca timer
+        }
+      }
     }));
     container.querySelectorAll('.toggle-ver').forEach(btn=>{
       btn.addEventListener('click',()=>{
@@ -2020,6 +2052,14 @@ window.renderRoutine = function renderRoutine() {
         renderRoutine();
       });
     });
+    // Botón Terminar al final
+    if(CRON.iniciado) {
+      const finBtn = document.createElement('button');
+      finBtn.textContent = '✓ Terminar sesión';
+      finBtn.style.cssText = 'width:100%;padding:14px;background:var(--success);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;margin-bottom:16px;';
+      finBtn.onclick = () => document.getElementById('cronFin')?.click();
+      container.appendChild(finBtn);
+    }
   } catch(err) {
     container.innerHTML = `<div class="card"><div class="empty-state">Hubo un problema mostrando este día. Intenta recargar la página.<br><br><span style="font-size:10px;">${err.message}</span></div></div>`;
     console.error('Error en renderRoutine:', err);
@@ -2081,6 +2121,7 @@ loadAllImages().then(() => {
   renderHeaderDate();
   checkOnboarding();
   initFeelingToggle();
+  initRestSecs();
   initThemeAndAccent();
 });
 
@@ -4039,6 +4080,18 @@ function checkOnboarding() {
 }
 
 // ===== PREFERENCIA CARITAS =====
+function saveRestSecs(val) {
+  DATA.restSecs = parseInt(val);
+  saveData(DATA);
+  const sel = document.getElementById('restSecsSelect');
+  if(sel) sel.value = val;
+}
+
+function initRestSecs() {
+  const sel = document.getElementById('restSecsSelect');
+  if(sel && DATA.restSecs) sel.value = DATA.restSecs;
+}
+
 function saveFeelingPref(on) {
   DATA.feelingEnabled = on;
   saveData(DATA);
@@ -4088,14 +4141,14 @@ function showFeelingBar(momento, exIdx, setIdx, container) {
       bar.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       if(feelingTimeout) clearTimeout(feelingTimeout);
-      feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(90); }, 800);
+      feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(DATA.restSecs||90); }, 800);
     };
     bar.appendChild(btn);
   });
 
   container.appendChild(bar);
   // Auto-desaparecer en 3 seg si no toca nada
-  feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(90); }, 3000);
+  feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(DATA.restSecs||90); }, 3000);
 }
 
 function showFeelingPopup(momento, exIdx, setIdx) {
@@ -4120,13 +4173,13 @@ function showFeelingPopup(momento, exIdx, setIdx) {
       saveFeelingData(momento, exIdx, setIdx, f.val);
       popup.remove();
       if(feelingTimeout) clearTimeout(feelingTimeout);
-      startRestTimer(90);
+      startRestTimer(DATA.restSecs||90);
     };
     row.appendChild(btn);
   });
   popup.appendChild(row);
   document.body.appendChild(popup);
-  feelingTimeout = setTimeout(() => { if(popup.parentNode) popup.remove(); startRestTimer(90); }, 4000);
+  feelingTimeout = setTimeout(() => { if(popup.parentNode) popup.remove(); startRestTimer(DATA.restSecs||90); }, 4000);
 }
 
 function saveFeelingData(momento, exIdx, setIdx, val) {
@@ -4461,7 +4514,7 @@ document.addEventListener('click', e => {
     if(DATA.feelingEnabled !== false) {
       showFeelingPopup(mom, parseInt(exIdx), parseInt(setIdx));
     } else {
-      startRestTimer(90);
+      startRestTimer(DATA.restSecs||90);
     }
   } else {
     // Desmarcó — cancelar timer
