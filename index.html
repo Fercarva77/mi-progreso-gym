@@ -4094,6 +4094,37 @@ function showFeelingBar(momento, exIdx, setIdx, container) {
   feelingTimeout = setTimeout(() => { bar.remove(); startRestTimer(90); }, 3000);
 }
 
+function showFeelingPopup(momento, exIdx, setIdx) {
+  if(feelingTimeout) clearTimeout(feelingTimeout);
+  let popup = document.getElementById('feelingPopup');
+  if(popup) popup.remove();
+  popup = document.createElement('div');
+  popup.id = 'feelingPopup';
+  popup.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:14px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,0.18);';
+  const label = document.createElement('div');
+  label.textContent = '¿Cómo te sentiste?';
+  label.style.cssText = 'font-size:13px;font-weight:600;color:var(--text-secondary);';
+  popup.appendChild(label);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:12px;';
+  FEELINGS.forEach(f => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'font-size:28px;background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;transition:transform 0.1s;';
+    btn.textContent = f.emoji;
+    btn.title = f.label;
+    btn.onclick = () => {
+      saveFeelingData(momento, exIdx, setIdx, f.val);
+      popup.remove();
+      if(feelingTimeout) clearTimeout(feelingTimeout);
+      startRestTimer(90);
+    };
+    row.appendChild(btn);
+  });
+  popup.appendChild(row);
+  document.body.appendChild(popup);
+  feelingTimeout = setTimeout(() => { if(popup.parentNode) popup.remove(); startRestTimer(90); }, 4000);
+}
+
 function saveFeelingData(momento, exIdx, setIdx, val) {
   const dayKey = daySelect.value;
   const key = getTodayWorkoutKey(dayKey);
@@ -4424,12 +4455,7 @@ document.addEventListener('click', e => {
     }
     // Mostrar feeling bar o ir directo al timer
     if(DATA.feelingEnabled !== false) {
-      const exContainer = btn.closest('.card');
-      if(exContainer) {
-        showFeelingBar(mom, parseInt(exIdx), parseInt(setIdx), exContainer);
-      } else {
-        startRestTimer(90);
-      }
+      showFeelingPopup(mom, parseInt(exIdx), parseInt(setIdx));
     } else {
       startRestTimer(90);
     }
