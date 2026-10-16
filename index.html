@@ -1830,6 +1830,70 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
     html += `<button class="btn-primary btn-small" data-save-momento="${momento}">Guardar trote</button>`;
   } else if(sesion.tipo === 'pesas') {
     const savedSession = getSavedSession(dayKey, momento) || {exercises:{}};
+
+    // ── GRID DE CUADRITOS ──
+    // Agrupar ejercicios por músculo para el grid
+    const gridPorMusculo = {};
+    sesion.ejercicios.forEach((nombreEj) => {
+      const def = findEjercicioDef(nombreEj);
+      const m = def.musculo || 'General';
+      if(!gridPorMusculo[m]) gridPorMusculo[m] = [];
+      gridPorMusculo[m].push(nombreEj);
+    });
+    html += `<div class="ejercicios-grid-wrap" style="margin-bottom:14px;">`;
+    Object.entries(gridPorMusculo).forEach(([musculo, ejerciciosList]) => {
+      html += `<div style="margin-bottom:10px;">
+        <div style="font-size:12px; font-weight:700; color:${grupoColor.c}; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">${musculo}</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:6px;">`;
+      ejerciciosList.forEach(nombreEj => {
+        const imgUrl = findImage(nombreEj);
+        const savedEx = savedSession.exercises?.[nombreEj] || [];
+        const defEx = findEjercicioDef(nombreEj);
+        const totalSets = Math.max(savedEx.length, defEx.sets || 0);
+        const doneCount = savedEx.filter(s => s.done).length;
+        const completed = totalSets > 0 && doneCount >= totalSets;
+        const partial = doneCount > 0 && !completed;
+        const borderStyle = completed ? '2px solid var(--success)' : partial ? '2px solid var(--warning)' : '1px solid var(--border)';
+        const overlayHtml = completed
+          ? `<div style="position:absolute;inset:0;background:rgba(34,197,94,0.35);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">✓</div>`
+          : partial
+          ? `<div style="position:absolute;inset:0;background:rgba(234,179,8,0.15);border-radius:8px;"></div>`
+          : '';
+        const imgHtml = imgUrl
+          ? `<img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" loading="lazy">`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text-muted);">🏋️</div>`;
+        html += `<div class="ejercicio-cuadrito" data-ex-scroll="${nombreEj}" data-momento-scroll="${momento}"
+          style="position:relative;cursor:pointer;border-radius:9px;border:${borderStyle};overflow:hidden;aspect-ratio:1;background:var(--surface-2);">
+          ${imgHtml}
+          ${overlayHtml}
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));padding:3px 4px;">
+            <div style="font-size:9px;color:#fff;line-height:1.2;font-weight:600;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${nombreEj}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+    // Botón + para agregar ejercicio desde el grid
+    html += `<button class="btn-ghost btn-small add-ex-grid-btn" data-momento="${momento}" data-day="${dayKey}"
+      style="width:100%;margin-top:2px;color:var(--accent);border-color:var(--accent);">＋ Agregar ejercicio</button>
+    <div class="add-ex-routine-panel" id="addexpanel-grid-${momento}" style="display:none; margin-top:8px; background:var(--surface); border-radius:12px; padding:12px; border:1px solid var(--border);">
+      <div style="font-size:12px; font-weight:600; margin-bottom:8px; color:var(--text-secondary);">Filtrar por músculo:</div>
+      <select class="add-ex-grupo-sel-grid" data-momento="${momento}" style="margin-bottom:10px;">
+        <option value="">— todos los grupos —</option>
+        <option value="pecho">Pecho</option>
+        <option value="espalda">Espalda</option>
+        <option value="piernas">Piernas</option>
+        <option value="hombros">Hombros</option>
+        <option value="brazos">Brazos</option>
+        <option value="core">Core / Abdomen</option>
+        <option value="cardio">Cardio</option>
+      </select>
+      <select class="add-ex-nombre-sel-grid" data-momento="${momento}" style="margin-bottom:10px;"></select>
+      <div class="add-ex-preview-grid" data-momento="${momento}" style="min-height:60px; text-align:center; margin-bottom:8px;"></div>
+      <button class="btn-primary btn-small add-ex-confirm-grid-btn" data-momento="${momento}" data-day="${dayKey}">Agregar a la rutina</button>
+    </div>`;
+    html += `</div>`;
+
     // Agrupar por músculo específico
     const porMusculo = {};
     sesion.ejercicios.forEach((nombreEj, exIdx) => {
@@ -1863,8 +1927,21 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
       let grupoEj = 'piernas';
       for(const g in BANCO_EJERCICIOS) { if(BANCO_EJERCICIOS[g].some(e=>e.nombre===nombreEj)) { grupoEj=g; break; } }
       const prActual = getPR(nombreEj);
-      html += `<div class="exercise-row" data-ex-idx="${exIdx}" data-momento-row="${momento}" data-ex-name="${nombreEj}">`;
-      html += `<div class="exercise-header">
+      html += `<div class="exercise-row" data-ex-idx="${exIdx}" data-momento-row="${momento}" data-ex-name="${nombreEj}" id="exrow-${momento}-${exIdx}">`;
+      // Thumbnail lateral
+      const thumbHtml = customImg
+        ? `<img src="${customImg}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`
+        : hasSvg
+          ? `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${SVGS[nombreEj]}</div>`
+          : `<label style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:10px;gap:2px;">
+              <span style="font-size:20px;">📷</span><span>Foto</span>
+              <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
+            </label>`;
+      html += `<div class="exercise-header" style="display:flex;gap:10px;align-items:flex-start;">
+        <div class="ex-thumb toggle-thumb" data-idx="${momento}-${exIdx}"
+          style="flex-shrink:0;width:64px;height:64px;border-radius:9px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border);cursor:${hasVisual?'pointer':'default'};">
+          ${thumbHtml}
+        </div>
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <div class="exercise-name">${nombreEj}</div>
@@ -1872,14 +1949,16 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
           </div>
           ${def.en ? `<div style="font-size:11px; color:var(--text-muted); font-style:italic;">${def.en}</div>` : ''}
           <div class="exercise-target">${def.target}${def.musculo ? ' · '+def.musculo : ''}</div>
-        </div>
-        <div style="display:flex; gap:4px; flex-shrink:0; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-          <div class="svg-toggle swap-ex-btn" data-momento="${momento}" data-ex="${exIdx}" data-grupo="${grupoEj}" style="cursor:pointer;">⇄ Cambiar</div>
-          ${hasVisual ? `<div class="svg-toggle toggle-ver" data-idx="${momento}-${exIdx}">Ver</div>` : ''}
-          <label class="svg-toggle img-upload-label" style="cursor:pointer;">
-            ${customImg ? '📷' : '+ Foto'}
-            <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
-          </label>
+          <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">
+            <div class="svg-toggle swap-ex-btn" data-momento="${momento}" data-ex="${exIdx}" data-grupo="${grupoEj}" style="cursor:pointer;">⇄ Cambiar</div>
+            ${!customImg ? `<label class="svg-toggle img-upload-label" style="cursor:pointer;">
+              + Foto
+              <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
+            </label>` : `<label class="svg-toggle img-upload-label" style="cursor:pointer;">
+              📷 Cambiar
+              <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
+            </label>`}
+          </div>
         </div>
       </div>`;
       // Panel swap
@@ -1891,7 +1970,7 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
         <button class="btn-primary btn-small swap-confirm-btn" data-momento="${momento}" data-ex="${exIdx}" data-day="${daySelect.value}" style="margin-top:6px;">Confirmar cambio</button>
       </div>`;
       if(hasVisual) {
-        html += `<div class="svg-panel" id="svgpanel-${momento}-${exIdx}">${customImg ? `<img src="${customImg}" style="max-width:100%; border-radius:10px;">` : SVGS[nombreEj]}</div>`;
+        html += `<div class="svg-panel" id="svgpanel-${momento}-${exIdx}">${customImg ? `<img src="${customImg}" style="max-width:100%; border-radius:10px; cursor:pointer;" class="toggle-thumb" data-idx="${momento}-${exIdx}">` : `<div style="cursor:pointer;" class="toggle-thumb" data-idx="${momento}-${exIdx}">${SVGS[nombreEj]}</div>`}</div>`;
       }
       // Encabezado con columna de referencia
       html += `<div style="display:grid; grid-template-columns:28px 1fr 1fr 36px; gap:6px; margin-bottom:4px;">
@@ -1923,26 +2002,6 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
       html += `</div>`;
     });
     html += `<button class="btn-primary btn-small" data-save-momento="${momento}" style="margin-top:8px;">Guardar ${momentoLabel.toLowerCase()}</button>`;
-    // Botón para agregar ejercicio desde la rutina
-    html += `<div style="margin-top:12px;">
-      <button class="btn-ghost btn-small add-ex-routine-btn" data-momento="${momento}" data-day="${dayKey}" style="width:100%; color:var(--accent); border-color:var(--accent);">＋ Agregar ejercicio</button>
-      <div class="add-ex-routine-panel" id="addexpanel-${momento}" style="display:none; margin-top:10px; background:var(--surface); border-radius:12px; padding:12px; border:1px solid var(--border);">
-        <div style="font-size:12px; font-weight:600; margin-bottom:8px; color:var(--text-secondary);">Filtrar por músculo:</div>
-        <select class="add-ex-grupo-sel" data-momento="${momento}" style="margin-bottom:10px;">
-          <option value="">— todos los grupos —</option>
-          <option value="pecho">Pecho</option>
-          <option value="espalda">Espalda</option>
-          <option value="piernas">Piernas</option>
-          <option value="hombros">Hombros</option>
-          <option value="brazos">Brazos</option>
-          <option value="core">Core / Abdomen</option>
-          <option value="cardio">Cardio</option>
-        </select>
-        <select class="add-ex-nombre-sel" data-momento="${momento}" style="margin-bottom:10px;"></select>
-        <div class="add-ex-preview" data-momento="${momento}" style="min-height:60px; text-align:center; margin-bottom:8px;"></div>
-        <button class="btn-primary btn-small add-ex-confirm-btn" data-momento="${momento}" data-day="${dayKey}">Agregar a la rutina</button>
-      </div>
-    </div>`;
   } else if(sesion.tipo === 'descanso') {
     html += `<div class="empty-state">Día de descanso.</div>`;
   } else if(sesion.tipo === 'libre') {
@@ -2020,11 +2079,92 @@ window.renderRoutine = function renderRoutine() {
         }
       }
     }));
-    container.querySelectorAll('.toggle-ver').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const panel = document.getElementById('svgpanel-'+btn.dataset.idx);
-        const open = panel.classList.toggle('open');
-        btn.textContent = open ? 'Ocultar' : 'Ver';
+    // Thumbnail lateral y panel expandido — tap abre/cierra
+    container.querySelectorAll('.toggle-thumb').forEach(el=>{
+      el.addEventListener('click', () => {
+        const panel = document.getElementById('svgpanel-'+el.dataset.idx);
+        if(!panel) return;
+        panel.classList.toggle('open');
+      });
+    });
+
+    // Cuadritos del grid → scroll hasta el ejercicio
+    container.querySelectorAll('.ejercicio-cuadrito').forEach(card => {
+      card.addEventListener('click', () => {
+        const nombre = card.dataset.exScroll;
+        const mom = card.dataset.momentoScroll;
+        // Buscar el exercise-row correspondiente
+        const rows = container.querySelectorAll('.exercise-row');
+        for(const row of rows) {
+          if(row.dataset.exName === nombre && row.dataset.momentoRow === mom) {
+            row.scrollIntoView({behavior:'smooth', block:'start'});
+            // Parpadeo visual
+            row.style.transition = 'box-shadow 0.3s';
+            row.style.boxShadow = '0 0 0 3px var(--accent)';
+            setTimeout(() => { row.style.boxShadow = ''; }, 1200);
+            break;
+          }
+        }
+      });
+    });
+
+    // Grid ＋ agregar ejercicio — toggle panel
+    container.querySelectorAll('.add-ex-grid-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mom = btn.dataset.momento;
+        const panel = document.getElementById(`addexpanel-grid-${mom}`);
+        const open = panel.style.display === 'none';
+        panel.style.display = open ? 'block' : 'none';
+        btn.textContent = open ? '✕ Cerrar' : '＋ Agregar ejercicio';
+        if(open) {
+          const sel = panel.querySelector('.add-ex-nombre-sel-grid');
+          poblarAddExSelect(sel, '');
+          const preview = panel.querySelector('.add-ex-preview-grid');
+          actualizarAddExPreview(preview, sel.value);
+        }
+      });
+    });
+
+    // Grid filtrar grupo
+    container.querySelectorAll('.add-ex-grupo-sel-grid').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const mom = sel.dataset.momento;
+        const panel = document.getElementById(`addexpanel-grid-${mom}`);
+        const nombreSel = panel.querySelector('.add-ex-nombre-sel-grid');
+        const preview = panel.querySelector('.add-ex-preview-grid');
+        poblarAddExSelect(nombreSel, sel.value);
+        actualizarAddExPreview(preview, nombreSel.value);
+      });
+    });
+
+    // Grid cambiar ejercicio seleccionado → preview
+    container.querySelectorAll('.add-ex-nombre-sel-grid').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const mom = sel.dataset.momento;
+        const panel = document.getElementById(`addexpanel-grid-${mom}`);
+        const preview = panel.querySelector('.add-ex-preview-grid');
+        actualizarAddExPreview(preview, sel.value);
+      });
+    });
+
+    // Grid confirmar agregar
+    container.querySelectorAll('.add-ex-confirm-grid-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mom = btn.dataset.momento;
+        const dk = btn.dataset.day;
+        const panel = document.getElementById(`addexpanel-grid-${mom}`);
+        const nombreSel = panel.querySelector('.add-ex-nombre-sel-grid');
+        const nombre = nombreSel.value;
+        if(!nombre) { showToast('Elige un ejercicio'); return; }
+        if(!DATA.rutina[dk][mom]) return;
+        const sesion = DATA.rutina[dk][mom];
+        if(!sesion.ejercicios) sesion.ejercicios = [];
+        if(sesion.ejercicios.includes(nombre)) { showToast('Ese ejercicio ya está en la rutina'); return; }
+        autoGuardarRutina();
+        sesion.ejercicios.push(nombre);
+        saveData(DATA);
+        showToast(`✓ ${nombre} agregado`);
+        renderRoutine();
       });
     });
     container.querySelectorAll('.img-upload-input').forEach(inp=>{
@@ -2109,67 +2249,6 @@ window.renderRoutine = function renderRoutine() {
         autoGuardarRutina();
         w[mom].exercises[nombreEj].pop();
         saveData(DATA);
-        renderRoutine();
-      });
-    });
-    // Agregar ejercicio desde rutina — toggle panel
-    container.querySelectorAll('.add-ex-routine-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const mom = btn.dataset.momento;
-        const panel = document.getElementById(`addexpanel-${mom}`);
-        const open = panel.style.display === 'none';
-        panel.style.display = open ? 'block' : 'none';
-        btn.textContent = open ? '✕ Cerrar' : '＋ Agregar ejercicio';
-        if(open) {
-          // Poblar ejercicios por defecto (sin filtro)
-          const sel = panel.querySelector('.add-ex-nombre-sel');
-          poblarAddExSelect(sel, '');
-          const preview = panel.querySelector('.add-ex-preview');
-          actualizarAddExPreview(preview, sel.value);
-        }
-      });
-    });
-
-    // Filtrar por grupo muscular
-    container.querySelectorAll('.add-ex-grupo-sel').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const mom = sel.dataset.momento;
-        const panel = document.getElementById(`addexpanel-${mom}`);
-        const nombreSel = panel.querySelector('.add-ex-nombre-sel');
-        const preview = panel.querySelector('.add-ex-preview');
-        poblarAddExSelect(nombreSel, sel.value);
-        actualizarAddExPreview(preview, nombreSel.value);
-      });
-    });
-
-    // Cambiar ejercicio seleccionado → actualizar preview
-    container.querySelectorAll('.add-ex-nombre-sel').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const mom = sel.dataset.momento;
-        const panel = document.getElementById(`addexpanel-${mom}`);
-        const preview = panel.querySelector('.add-ex-preview');
-        actualizarAddExPreview(preview, sel.value);
-      });
-    });
-
-    // Confirmar agregar ejercicio
-    container.querySelectorAll('.add-ex-confirm-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const mom = btn.dataset.momento;
-        const dk = btn.dataset.day;
-        const panel = document.getElementById(`addexpanel-${mom}`);
-        const nombreSel = panel.querySelector('.add-ex-nombre-sel');
-        const nombre = nombreSel.value;
-        if(!nombre) { showToast('Elige un ejercicio'); return; }
-        // Asegurarnos que la sesion existe
-        if(!DATA.rutina[dk][mom]) return;
-        const sesion = DATA.rutina[dk][mom];
-        if(!sesion.ejercicios) sesion.ejercicios = [];
-        if(sesion.ejercicios.includes(nombre)) { showToast('Ese ejercicio ya está en la rutina'); return; }
-        autoGuardarRutina();
-        sesion.ejercicios.push(nombre);
-        saveData(DATA);
-        showToast(`✓ ${nombre} agregado`);
         renderRoutine();
       });
     });
@@ -3981,9 +4060,15 @@ function mostrarPreWorkout() {
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">${momLabel} · ${momento.titulo||''}</div>
       <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px,1fr)); gap:8px;">`;
     ejercicios.forEach(nombre => {
-      const svg = SVGS[nombre] || SVGS[Object.keys(SVGS).find(k => nombre.includes(k.split(' ')[0]))] || '';
+      const imgUrl = findImage(nombre);
+      const svg = !imgUrl && (SVGS[nombre] || SVGS[Object.keys(SVGS).find(k => nombre.includes(k.split(' ')[0]))] || '');
+      const visualHtml = imgUrl
+        ? `<img src="${imgUrl}" style="width:50px;height:50px;object-fit:cover;border-radius:7px;margin:0 auto 4px;display:block;">`
+        : svg
+          ? `<div style="width:50px; height:50px; margin:0 auto 4px;">${svg}</div>`
+          : '<div style="width:50px;height:50px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:22px;">🏋️</div>';
       html += `<div style="background:var(--surface); border-radius:10px; padding:8px 6px; text-align:center; border:1px solid var(--border);">
-        ${svg ? `<div style="width:50px; height:50px; margin:0 auto 4px;">${svg}</div>` : '<div style="width:50px;height:50px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:22px;">🏋️</div>'}
+        ${visualHtml}
         <div style="font-size:10px; color:var(--text-secondary); line-height:1.2;">${nombre}</div>
       </div>`;
     });
