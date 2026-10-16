@@ -1877,20 +1877,18 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
     html += `<button class="btn-ghost btn-small add-ex-grid-btn" data-momento="${momento}" data-day="${dayKey}"
       style="width:100%;margin-top:2px;color:var(--accent);border-color:var(--accent);">＋ Agregar ejercicio</button>
     <div class="add-ex-routine-panel" id="addexpanel-grid-${momento}" style="display:none; margin-top:8px; background:var(--surface); border-radius:12px; padding:12px; border:1px solid var(--border);">
-      <div style="font-size:12px; font-weight:600; margin-bottom:8px; color:var(--text-secondary);">Filtrar por músculo:</div>
-      <select class="add-ex-grupo-sel-grid" data-momento="${momento}" style="margin-bottom:10px;">
-        <option value="">— todos los grupos —</option>
-        <option value="pecho">Pecho</option>
-        <option value="espalda">Espalda</option>
-        <option value="piernas">Piernas</option>
-        <option value="hombros">Hombros</option>
-        <option value="brazos">Brazos</option>
-        <option value="core">Core / Abdomen</option>
-        <option value="cardio">Cardio</option>
-      </select>
-      <select class="add-ex-nombre-sel-grid" data-momento="${momento}" style="margin-bottom:10px;"></select>
-      <div class="add-ex-preview-grid" data-momento="${momento}" style="min-height:60px; text-align:center; margin-bottom:8px;"></div>
-      <button class="btn-primary btn-small add-ex-confirm-grid-btn" data-momento="${momento}" data-day="${dayKey}">Agregar a la rutina</button>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+        ${['pecho','espalda','piernas','hombros','brazos','core','cardio'].map(g =>
+          `<button class="btn-ghost btn-small add-ex-grupo-chip" data-grupo="${g}" data-momento="${momento}"
+            style="font-size:11px;padding:4px 10px;">${{pecho:'Pecho',espalda:'Espalda',piernas:'Piernas',hombros:'Hombros',brazos:'Brazos',core:'Core',cardio:'Cardio'}[g]}</button>`
+        ).join('')}
+      </div>
+      <div class="add-ex-visual-grid" id="addexvisual-${momento}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;max-height:320px;overflow-y:auto;">
+        <div style="color:var(--text-muted);font-size:12px;grid-column:1/-1;padding:8px 0;">Elige un grupo arriba para ver los ejercicios</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);text-align:center;">
+        Sin foto → <span style="color:var(--accent);cursor:pointer;" class="add-ex-goto-editar" data-momento="${momento}">📷 Agregar foto en Editar</span>
+      </div>
     </div>`;
     html += `</div>`;
 
@@ -1938,10 +1936,6 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
               <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
             </label>`;
       html += `<div class="exercise-header" style="display:flex;gap:10px;align-items:flex-start;">
-        <div class="ex-thumb toggle-thumb" data-idx="${momento}-${exIdx}"
-          style="flex-shrink:0;width:64px;height:64px;border-radius:9px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border);cursor:${hasVisual?'pointer':'default'};">
-          ${thumbHtml}
-        </div>
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <div class="exercise-name">${nombreEj}</div>
@@ -1959,6 +1953,10 @@ function renderSessionBlock(dayKey, momento, momentoLabel, isToday) {
               <input type="file" accept="image/*" class="img-upload-input" data-ex-name="${nombreEj}" style="display:none;">
             </label>`}
           </div>
+        </div>
+        <div class="ex-thumb toggle-thumb" data-idx="${momento}-${exIdx}"
+          style="flex-shrink:0;width:64px;height:64px;border-radius:9px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border);cursor:${hasVisual?'pointer':'default'};">
+          ${thumbHtml}
         </div>
       </div>`;
       // Panel swap
@@ -2108,7 +2106,8 @@ window.renderRoutine = function renderRoutine() {
       });
     });
 
-    // Grid ＋ agregar ejercicio — toggle panel
+    // ── Panel visual agregar ejercicio ──
+    // Toggle abrir/cerrar
     container.querySelectorAll('.add-ex-grid-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const mom = btn.dataset.momento;
@@ -2116,55 +2115,90 @@ window.renderRoutine = function renderRoutine() {
         const open = panel.style.display === 'none';
         panel.style.display = open ? 'block' : 'none';
         btn.textContent = open ? '✕ Cerrar' : '＋ Agregar ejercicio';
-        if(open) {
-          const sel = panel.querySelector('.add-ex-nombre-sel-grid');
-          poblarAddExSelect(sel, '');
-          const preview = panel.querySelector('.add-ex-preview-grid');
-          actualizarAddExPreview(preview, sel.value);
+      });
+    });
+
+    // Chips de grupo — cargar ejercicios visual
+    container.querySelectorAll('.add-ex-grupo-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const grupo = chip.dataset.grupo;
+        const mom = chip.dataset.momento;
+        const panel = document.getElementById(`addexpanel-grid-${mom}`);
+        // Resaltar chip activo
+        panel.querySelectorAll('.add-ex-grupo-chip').forEach(c => {
+          c.style.background = '';
+          c.style.color = '';
+          c.style.borderColor = '';
+        });
+        chip.style.background = 'var(--accent)';
+        chip.style.color = '#fff';
+        chip.style.borderColor = 'var(--accent)';
+        // Construir grid visual
+        const visualGrid = document.getElementById(`addexvisual-${mom}`);
+        const ejercicios = getGrupoEjercicios(grupo);
+        const dayKey = daySelect.value;
+        const sesionActual = DATA.rutina[dayKey]?.[mom];
+        const yaEnRutina = sesionActual?.ejercicios || [];
+        if(!ejercicios.length) {
+          visualGrid.innerHTML = `<div style="color:var(--text-muted);font-size:12px;grid-column:1/-1;padding:8px 0;">No hay ejercicios en este grupo</div>`;
+          return;
         }
+        // Agrupar por musculo dentro del grupo
+        const porMusc = {};
+        ejercicios.forEach(ej => {
+          const def = findEjercicioDef(ej.nombre || ej);
+          const m = def.musculo || 'General';
+          if(!porMusc[m]) porMusc[m] = [];
+          porMusc[m].push(ej);
+        });
+        let gridHtml = '';
+        Object.entries(porMusc).forEach(([musc, lista]) => {
+          gridHtml += `<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--accent);margin-top:6px;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px;">${musc}</div>`;
+          lista.forEach(ej => {
+            const nombre = ej.nombre || ej;
+            const def = findEjercicioDef(nombre);
+            const imgUrl = findImage(nombre);
+            const enNombre = def.en || '';
+            const yaEsta = yaEnRutina.includes(nombre);
+            const imgHtml = imgUrl
+              ? `<img src="${imgUrl}" style="width:100%;height:56px;object-fit:cover;border-radius:7px 7px 0 0;">`
+              : `<div style="width:100%;height:56px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--surface-2);border-radius:7px 7px 0 0;">🏋️</div>`;
+            gridHtml += `<div class="add-ex-card${yaEsta?' already-added':''}" data-nombre="${nombre}" data-momento="${mom}" data-day="${dayKey}"
+              style="border-radius:8px;border:2px solid ${yaEsta?'var(--success)':'var(--border)'};overflow:hidden;cursor:${yaEsta?'default':'pointer'};background:var(--surface);opacity:${yaEsta?'0.6':'1'};">
+              ${imgHtml}
+              <div style="padding:4px 5px;">
+                <div style="font-size:10px;font-weight:700;color:var(--text-primary);line-height:1.2;">${nombre}</div>
+                ${enNombre ? `<div style="font-size:9px;color:var(--text-muted);font-style:italic;line-height:1.2;">${enNombre}</div>` : ''}
+                ${yaEsta ? `<div style="font-size:9px;color:var(--success);font-weight:600;">✓ en rutina</div>` : ''}
+              </div>
+            </div>`;
+          });
+        });
+        visualGrid.innerHTML = gridHtml;
+        // Listeners en las tarjetas
+        visualGrid.querySelectorAll('.add-ex-card:not(.already-added)').forEach(card => {
+          card.addEventListener('click', () => {
+            const nombre = card.dataset.nombre;
+            const mom2 = card.dataset.momento;
+            const dk = card.dataset.day;
+            if(!DATA.rutina[dk][mom2]) return;
+            const sesion = DATA.rutina[dk][mom2];
+            if(!sesion.ejercicios) sesion.ejercicios = [];
+            if(sesion.ejercicios.includes(nombre)) { showToast('Ya está en la rutina'); return; }
+            autoGuardarRutina();
+            sesion.ejercicios.push(nombre);
+            saveData(DATA);
+            showToast(`✓ ${nombre} agregado`);
+            renderRoutine();
+          });
+        });
       });
     });
 
-    // Grid filtrar grupo
-    container.querySelectorAll('.add-ex-grupo-sel-grid').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const mom = sel.dataset.momento;
-        const panel = document.getElementById(`addexpanel-grid-${mom}`);
-        const nombreSel = panel.querySelector('.add-ex-nombre-sel-grid');
-        const preview = panel.querySelector('.add-ex-preview-grid');
-        poblarAddExSelect(nombreSel, sel.value);
-        actualizarAddExPreview(preview, nombreSel.value);
-      });
-    });
-
-    // Grid cambiar ejercicio seleccionado → preview
-    container.querySelectorAll('.add-ex-nombre-sel-grid').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const mom = sel.dataset.momento;
-        const panel = document.getElementById(`addexpanel-grid-${mom}`);
-        const preview = panel.querySelector('.add-ex-preview-grid');
-        actualizarAddExPreview(preview, sel.value);
-      });
-    });
-
-    // Grid confirmar agregar
-    container.querySelectorAll('.add-ex-confirm-grid-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const mom = btn.dataset.momento;
-        const dk = btn.dataset.day;
-        const panel = document.getElementById(`addexpanel-grid-${mom}`);
-        const nombreSel = panel.querySelector('.add-ex-nombre-sel-grid');
-        const nombre = nombreSel.value;
-        if(!nombre) { showToast('Elige un ejercicio'); return; }
-        if(!DATA.rutina[dk][mom]) return;
-        const sesion = DATA.rutina[dk][mom];
-        if(!sesion.ejercicios) sesion.ejercicios = [];
-        if(sesion.ejercicios.includes(nombre)) { showToast('Ese ejercicio ya está en la rutina'); return; }
-        autoGuardarRutina();
-        sesion.ejercicios.push(nombre);
-        saveData(DATA);
-        showToast(`✓ ${nombre} agregado`);
-        renderRoutine();
+    // Link → ir a Editar para agregar foto
+    container.querySelectorAll('.add-ex-goto-editar').forEach(lnk => {
+      lnk.addEventListener('click', () => {
+        setView('editar');
       });
     });
     container.querySelectorAll('.img-upload-input').forEach(inp=>{
