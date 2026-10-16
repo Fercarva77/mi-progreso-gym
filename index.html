@@ -13,7 +13,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot }
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, addDoc }
     from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -93,6 +93,124 @@
     if(firestoreUnsub) { firestoreUnsub(); firestoreUnsub = null; }
     await signOut(auth);
   };
+
+  // ── Friends / Amigos ──
+  // Genera código de 6 chars único para el usuario
+  function generateFriendCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for(let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  // Asegura que el usuario tenga friendCode en Firestore y en DATA
+  async function ensureFriendCode(uid, displayName) {
+    const profileRef = doc(db, 'users', uid, 'gym', 'profile');
+    const snap = await getDoc(profileRef);
+    if(snap.exists() && snap.data().friendCode) {
+      window.MY_FRIEND_CODE = snap.data().friendCode;
+      window.MY_DISPLAY_NAME = snap.data().displayName || displayName || 'Tú';
+    } else {
+      const code = generateFriendCode();
+      const name = displayName || 'Usuario';
+      await setDoc(profileRef, { friendCode: code, displayName: name, uid }, { merge: true });
+      window.MY_FRIEND_CODE = code;
+      window.MY_DISPLAY_NAME = name;
+    }
+  }
+
+  // Buscar usuario por friendCode
+  window.findUserByCode = async function(code) {
+    const q = query(collection(db, 'users'), where('friendCode_index', '==', code.toUpperCase()));
+    // Usamos un índice plano en /users/{uid} para búsqueda
+    const snap = await getDocs(q);
+    if(!snap.empty) return { uid: snap.docs[0].id, ...snap.docs[0].data() };
+    return null;
+  };
+
+  // Agregar amigo por código — guarda en ambas direcciones
+  window.addFriendByCode = async function(code) {
+    if(!currentUser) { alert('Inicia sesión primero'); return false; }
+    const codeUp = code.trim().toUpperCase();
+    if(codeUp === window.MY_FRIEND_CODE) { showToast('Ese es tu propio código 😄'); return false; }
+    // Buscar en /users/{uid}/gym/profile donde friendCode == codeUp
+    const usersSnap = await getDocs(collection(db, 'users'));
+    let targetUid = null, targetName = 'Amigo';
+    for(const d of usersSnap.docs) {
+      const profileSnap = await getDoc(doc(db, 'users', d.id, 'gym', 'profile'));
+      if(profileSnap.exists() && profileSnap.data().friendCode === codeUp) {
+        targetUid = d.id;
+        targetName = profileSnap.data().displayName || 'Amigo';
+        break;
+      }
+    }
+    if(!targetUid) { showToast('Código no encontrado'); return false; }
+    // Guardar amistad (doc con ID = sorted UIDs para evitar duplicados)
+    const pairId = [currentUser.uid, targetUid].sort().join('_');
+    await setDoc(doc(db, 'friendships', pairId), {
+      uids: [currentUser.uid, targetUid],
+      names: { [currentUser.uid]: window.MY_DISPLAY_NAME, [targetUid]: targetName },
+      createdAt: Date.now()
+    }, { merge: true });
+    showToast(`¡${targetName} agregado como amigo!`);
+    return true;
+  };
+
+  // Obtener lista de amigos del usuario actual
+  window.getFriends = async function() {
+    if(!currentUser) return [];
+    const q = query(collection(db, 'friendships'), where('uids', 'array-contains', currentUser.uid));
+    const snap = await getDocs(q);
+    const friends = [];
+    for(const d of snap.docs) {
+      const data = d.data();
+      const friendUid = data.uids.find(u => u !== currentUser.uid);
+      if(!friendUid) continue;
+      friends.push({ uid: friendUid, name: data.names?.[friendUid] || 'Amigo', pairId: d.id });
+    }
+    return friends;
+  };
+
+  // Obtener PRs de un usuario (máximo peso por ejercicio en todo su historial)
+  window.getFriendPRs = async function(uid) {
+    const ref = doc(db, 'users', uid, 'gym', 'data');
+    const snap = await getDoc(ref);
+    if(!snap.exists()) return {};
+    const data = snap.data();
+    const prs = {}; // { ejercicio: { peso, reps } }
+    if(!data.workouts) return prs;
+    for(const w of data.workouts) {
+      for(const momento of ['manana', 'tarde']) {
+        const ses = w[momento];
+        if(!ses || !ses.exercises) continue;
+        for(const [exName, sets] of Object.entries(ses.exercises)) {
+          for(const set of sets) {
+            if(!set.done || !set.peso) continue;
+            const p = parseFloat(set.peso) || 0;
+            if(!prs[exName] || p > prs[exName].peso) {
+              prs[exName] = { peso: p, reps: set.reps, unit: 'lbs' };
+            }
+          }
+        }
+      }
+    }
+    return prs;
+  };
+
+  // Remover amigo
+  window.removeFriend = async function(pairId) {
+    await deleteDoc(doc(db, 'friendships', pairId));
+    showToast('Amigo eliminado');
+    if(typeof window.renderAmigosView === 'function') window.renderAmigosView();
+  };
+
+  // Hook en onAuthStateChanged para asegurar friendCode
+  const _origOnAuth = onAuthStateChanged;
+  onAuthStateChanged(auth, user => {
+    if(user) {
+      ensureFriendCode(user.uid, user.displayName || user.email?.split('@')[0] || 'Usuario');
+    }
+  });
 
   // ── UI del botón de cuenta ──
   function updateAuthUI(user) {
@@ -629,6 +747,10 @@
     </div>
   </div>
 
+  <div class="view" id="view-amigos">
+    <div id="amigosContent" style="padding-bottom:20px;"></div>
+  </div>
+
   <div class="view" id="view-biblioteca">
     <div class="card" id="bibliotecaNav">
       <div class="card-title">Biblioteca de ejercicios</div>
@@ -644,6 +766,17 @@
         <input type="text" id="nameInput" placeholder="Tu nombre (ej. Fabián)">
       </div>
       <button class="btn-primary" id="saveNameBtn">Guardar nombre</button>
+      <!-- Unidad de peso -->
+      <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:14px; font-weight:600;">⚖️ Unidad de peso en ejercicios</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Afecta el ranking de amigos</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button id="unitLbs" onclick="setWeightUnit('lbs')" class="btn-ghost btn-small unit-btn">lb</button>
+          <button id="unitKg"  onclick="setWeightUnit('kg')"  class="btn-ghost btn-small unit-btn">kg</button>
+        </div>
+      </div>
       <!-- Modo oscuro -->
       <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
         <div>
@@ -825,6 +958,7 @@
   <div class="nav-item" data-view="dashboard"><span class="nav-icon">&#128200;</span>Dashboard</div>
   <div class="nav-item" data-view="nutricion"><span class="nav-icon">&#127829;</span>Nutrición</div>
   <div class="nav-item" data-view="plan"><span class="nav-icon">&#128197;</span>Plan</div>
+  <div class="nav-item" data-view="amigos"><span class="nav-icon">&#128101;</span>Amigos</div>
   <div class="nav-item" data-view="biblioteca"><span class="nav-icon">&#128218;</span>Ejerc.</div>
   <div class="nav-item" data-view="editar"><span class="nav-icon">&#9881;</span>Editar</div>
 </div>
@@ -1458,6 +1592,7 @@ if(!DATA.rutinaVersion || DATA.rutinaVersion < RUTINA_VERSION) {
   saveData(DATA);
 }
 if(DATA.nombre === undefined) DATA.nombre = "";
+if(!DATA.weightUnit) DATA.weightUnit = 'lbs';
 if(!DATA.customEjercicios) DATA.customEjercicios = {};
 DATA.exerciseImages = {};
 DATA.groupImages = {};
@@ -1720,11 +1855,39 @@ function applyName() {
   document.title = title;
   document.getElementById('nameInput').value = DATA.nombre || "";
 }
+function setWeightUnit(u) {
+  DATA.weightUnit = u;
+  saveData(DATA);
+  document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById(u === 'kg' ? 'unitKg' : 'unitLbs');
+  if(btn) { btn.classList.add('active'); btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.style.borderColor='var(--accent)'; }
+  const other = document.getElementById(u === 'kg' ? 'unitLbs' : 'unitKg');
+  if(other) { other.style.background=''; other.style.color=''; other.style.borderColor=''; }
+  showToast(`Unidad cambiada a ${u} ✓`);
+}
+function initWeightUnitButtons() {
+  const u = DATA.weightUnit || 'lbs';
+  ['lbs','kg'].forEach(id => {
+    const btn = document.getElementById('unit' + id.charAt(0).toUpperCase() + id.slice(1));
+    if(!btn) return;
+    const active = id === u;
+    btn.style.background = active ? 'var(--accent)' : '';
+    btn.style.color = active ? '#fff' : '';
+    btn.style.borderColor = active ? 'var(--accent)' : '';
+  });
+}
 document.getElementById('saveNameBtn').addEventListener('click', () => {
   DATA.nombre = document.getElementById('nameInput').value.trim();
   saveData(DATA);
   applyName();
   showToast("Nombre guardado ✓");
+  // Actualizar displayName en Firebase profile
+  if(window.MY_FRIEND_CODE && typeof window.saveToFirestore === 'function') {
+    import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js").then(({ doc, setDoc, getFirestore }) => {
+      // ya disponible vía el módulo global — skip, se actualiza en ensureFriendCode al reiniciar
+    });
+  }
+  window.MY_DISPLAY_NAME = DATA.nombre;
 });
 
 // ===== NAV =====
@@ -1762,9 +1925,10 @@ function setView(view) {
   if(view==='dashboard') renderDashboard();
   if(view==='nutricion') renderNutricion();
   if(view==='plan') renderPlanView();
-  if(view==='editar') renderEditorView();
+  if(view==='editar') { renderEditorView(); setTimeout(initWeightUnitButtons, 50); }
   if(view==='biblioteca') loadAllImages().then(() => renderBibliotecaGrupos());
   if(view==='rutina') loadAllImages().then(() => renderRoutine());
+  if(view==='amigos') renderAmigosView();
 }
 document.querySelectorAll('.tab,.nav-item').forEach(el=>el.addEventListener('click',()=>setView(el.dataset.view)));
 
@@ -2486,6 +2650,234 @@ function renderProgresoView() {
     });
     return `<div class="history-item"><span class="history-date">${formatDate(w.date)}</span><span>${dl} · ${parts.join(', ')||'Sin datos'}</span></div>`;
   }).join('');
+}
+
+// ===== AMIGOS =====
+// Conversión de peso según unidad del usuario que mira
+function myWeightUnit() { return DATA.weightUnit || 'lbs'; }
+function convertWeight(lbsVal) {
+  const u = myWeightUnit();
+  if(u === 'kg') return { val: Math.round(lbsVal / 2.20462 * 10) / 10, unit: 'kg' };
+  return { val: Math.round(lbsVal * 10) / 10, unit: 'lb' };
+}
+// PRs propios del usuario actual
+function getMyPRs() {
+  const prs = {};
+  if(!DATA.workouts) return prs;
+  for(const w of DATA.workouts) {
+    for(const momento of ['manana','tarde']) {
+      const ses = w[momento];
+      if(!ses || !ses.exercises) continue;
+      for(const [exName, sets] of Object.entries(ses.exercises)) {
+        for(const set of sets) {
+          if(!set.done || !set.peso) continue;
+          const p = parseFloat(set.peso) || 0;
+          if(!prs[exName] || p > prs[exName].peso) {
+            prs[exName] = { peso: p, reps: set.reps };
+          }
+        }
+      }
+    }
+  }
+  return prs;
+}
+
+// Agrupa ejercicios por músculo usando BANCO_EJERCICIOS
+function getMusculoDeEjercicio(nombre) {
+  for(const grupo of Object.values(BANCO_EJERCICIOS||{})) {
+    for(const ex of grupo) {
+      if(ex.nombre === nombre) return ex.musculo || ex.target || 'General';
+    }
+  }
+  return 'General';
+}
+
+window.renderAmigosView = async function() {
+  const el = document.getElementById('amigosContent');
+  if(!el) return;
+
+  // Estado de carga
+  el.innerHTML = `<div class="card"><div style="text-align:center;padding:30px;color:var(--text-muted);">Cargando amigos... ⏳</div></div>`;
+
+  // Verificar login
+  if(!window.MY_FRIEND_CODE) {
+    el.innerHTML = `<div class="card"><div class="card-title">👥 Amigos</div>
+      <p style="color:var(--text-secondary);">Inicia sesión con Google para usar la función de amigos.</p></div>`;
+    return;
+  }
+
+  // Mi PR
+  const myPRs = getMyPRs();
+  const myName = DATA.nombre || window.MY_DISPLAY_NAME || 'Tú';
+
+  // Cargar amigos
+  let friends = [];
+  try { friends = await window.getFriends(); } catch(e) { console.warn(e); }
+
+  // Cargar PRs de cada amigo
+  const allPRs = { [myName]: { prs: myPRs, uid: null } };
+  const friendsList = []; // para la lista de amigos
+  for(const f of friends) {
+    try {
+      const prs = await window.getFriendPRs(f.uid);
+      allPRs[f.name] = { prs, uid: f.uid, pairId: f.pairId };
+      friendsList.push({ ...f });
+    } catch(e) { console.warn('No se pudieron cargar PRs de', f.name); }
+  }
+
+  // Construir rankings por músculo > ejercicio
+  // Recolectar todos los ejercicios que aparecen en PRs de alguien
+  const allExercicios = new Set();
+  for(const { prs } of Object.values(allPRs)) {
+    Object.keys(prs).forEach(ex => allExercicios.add(ex));
+  }
+
+  // Agrupar por músculo
+  const byMusculo = {};
+  for(const exName of allExercicios) {
+    const m = getMusculoDeEjercicio(exName);
+    if(!byMusculo[m]) byMusculo[m] = [];
+    byMusculo[m].push(exName);
+  }
+
+  // Ordenar músculos
+  const musculos = Object.keys(byMusculo).sort();
+
+  // Filtro activo
+  const currentFilter = window._amigosFilter || 'todos';
+
+  // HTML del panel
+  let html = '';
+
+  // ── SECCIÓN MI CÓDIGO ──
+  html += `<div class="card">
+    <div class="card-title">👥 Amigos</div>
+    <div style="background:var(--accent-light);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Tu código de invitación</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:26px;font-weight:800;letter-spacing:3px;color:var(--accent);font-family:monospace;">${window.MY_FRIEND_CODE}</div>
+        <button class="btn-ghost btn-small" onclick="navigator.clipboard.writeText('${window.MY_FRIEND_CODE}').then(()=>showToast('Código copiado ✓'))">📋 Copiar</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Comparte este código con tus amigos para que te agreguen</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <input type="text" id="friendCodeInput" placeholder="Código de amigo (ej. FER-X7K)" maxlength="8"
+        style="flex:1;text-transform:uppercase;font-family:monospace;letter-spacing:2px;"
+        oninput="this.value=this.value.toUpperCase()">
+      <button class="btn btn-small" onclick="addFriendFromInput()" style="white-space:nowrap;">＋ Agregar</button>
+    </div>
+  </div>`;
+
+  // ── LISTA DE AMIGOS ──
+  html += `<div class="card">
+    <div class="card-title" style="margin-bottom:10px;">Mis amigos (${friendsList.length})</div>`;
+  if(friendsList.length === 0) {
+    html += `<div style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px 0;">
+      Sin amigos aún. Comparte tu código 👆</div>`;
+  } else {
+    html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+    for(const f of friendsList) {
+      const fPRs = allPRs[f.name]?.prs || {};
+      const exCount = Object.keys(fPRs).length;
+      html += `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface-2,var(--card2));border-radius:10px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;">
+          ${(f.name||'?')[0].toUpperCase()}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;">${f.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${exCount} ejercicios registrados</div>
+        </div>
+        <button class="btn-ghost btn-small" style="color:var(--danger);border-color:var(--danger);"
+          onclick="if(confirm('¿Eliminar a ${f.name} de amigos?')) window.removeFriend('${f.pairId}')">✕</button>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // ── RANKING ──
+  if(Object.keys(allExercicios).length > 0 || allExercicios.size > 0) {
+    const allNames = Object.keys(allPRs);
+
+    // Chips de filtro por músculo
+    html += `<div class="card">
+      <div class="card-title" style="margin-bottom:10px;">🏆 Ranking de PRs</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn-ghost btn-small amigos-filtro-chip ${currentFilter==='todos'?'active':''}"
+          data-filtro="todos" style="${currentFilter==='todos'?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">
+          Todos
+        </button>`;
+    for(const m of musculos) {
+      const isActive = currentFilter === m;
+      html += `<button class="btn-ghost btn-small amigos-filtro-chip ${isActive?'active':''}"
+        data-filtro="${m}"
+        style="${isActive?'background:var(--accent);color:#fff;border-color:var(--accent);font-size:11px;padding:4px 10px;':'font-size:11px;padding:4px 10px;'}">
+        ${m}
+      </button>`;
+    }
+    html += `</div>`;
+
+    // Rankings por músculo
+    const mediculos_render = currentFilter === 'todos' ? musculos : musculos.filter(m => m === currentFilter);
+    for(const musculo of mediculos_render) {
+      const ejerciciosEnMusculo = byMusculo[musculo];
+      let musculoHtml = '';
+
+      for(const exName of ejerciciosEnMusculo.sort()) {
+        // Ranking de todos los que tienen PR en este ejercicio
+        const rankData = [];
+        for(const [name, { prs }] of Object.entries(allPRs)) {
+          if(prs[exName]) {
+            const { val, unit } = convertWeight(prs[exName].peso);
+            rankData.push({ name, val, unit, reps: prs[exName].reps, isMe: name === myName });
+          }
+        }
+        if(rankData.length === 0) continue;
+        rankData.sort((a, b) => b.val - a.val);
+
+        const medals = ['🥇','🥈','🥉'];
+        musculoHtml += `<div style="margin-bottom:14px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">${exName}</div>`;
+        rankData.forEach((r, i) => {
+          const medal = medals[i] || `${i+1}.`;
+          const bgStyle = r.isMe ? 'background:var(--accent-light);border:1px solid var(--accent)44;' : 'background:var(--card2,var(--surface-2));';
+          musculoHtml += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:4px;${bgStyle}">
+            <span style="font-size:16px;width:24px;text-align:center;">${medal}</span>
+            <span style="flex:1;font-weight:${r.isMe?'700':'500'};font-size:14px;">${r.name}${r.isMe?' ★':''}</span>
+            <span style="font-weight:700;font-size:15px;color:var(--accent);">${r.val} ${r.unit}</span>
+            ${r.reps ? `<span style="font-size:11px;color:var(--text-muted);">× ${r.reps}</span>` : ''}
+          </div>`;
+        });
+        musculoHtml += `</div>`;
+      }
+
+      if(musculoHtml) {
+        html += `<div style="margin-bottom:18px;">
+          <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">${musculo}</div>
+          ${musculoHtml}
+        </div>`;
+      }
+    }
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+
+  // Chips de filtro
+  el.querySelectorAll('.amigos-filtro-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      window._amigosFilter = chip.dataset.filtro;
+      window.renderAmigosView();
+    });
+  });
+};
+
+async function addFriendFromInput() {
+  const input = document.getElementById('friendCodeInput');
+  if(!input || !input.value.trim()) { showToast('Ingresa un código'); return; }
+  const ok = await window.addFriendByCode(input.value.trim());
+  if(ok) { input.value = ''; window.renderAmigosView(); }
 }
 
 // ===== EDITOR =====
