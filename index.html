@@ -1386,7 +1386,11 @@ const BANCO_EJERCICIOS = {
     {nombre:"Elevación de talones de pie en máquina", en:"Standing Calf Raise Machine", target:"4 series x 15 reps", sets:4, equipo:"Máquina", musculo:"Pantorrillas"},
     {nombre:"Elevación de talones sentado", en:"Seated Calf Raise", target:"4 series x 15 reps", sets:4, equipo:"Máquina", musculo:"Pantorrillas"},
     {nombre:"Elevación de talones en prensa", en:"Leg Press Calf Raise", target:"4 series x 15 reps", sets:4, equipo:"Máquina", musculo:"Pantorrillas"},
-    {nombre:"Elevación de talones de pie (sin máquina)", en:"Standing Calf Raise (bodyweight)", target:"4 series x 15-20 reps", sets:4, equipo:"Peso corporal", musculo:"Pantorrillas"}
+    {nombre:"Elevación de talones de pie (sin máquina)", en:"Standing Calf Raise (bodyweight)", target:"4 series x 15-20 reps", sets:4, equipo:"Peso corporal", musculo:"Pantorrillas"},
+    {nombre:"Elevación de talones en Smith", en:"Smith Machine Calf Raise", target:"4 series x 15 reps", sets:4, equipo:"Máquina Smith", musculo:"Pantorrillas"},
+    {nombre:"Prensa de piernas (pies bajos)", en:"Leg Press (feet low)", target:"3 series x 10-12 reps", sets:3, equipo:"Máquina", musculo:"Cuádriceps"},
+    {nombre:"Prensa de piernas horizontal", en:"Horizontal Leg Press", target:"3 series x 10-12 reps", sets:3, equipo:"Máquina", musculo:"Cuádriceps"},
+    {nombre:"Aducción en máquina sentado", en:"Seated Hip Adduction Machine", target:"3 series x 15 reps", sets:3, equipo:"Máquina", musculo:"Glúteos"}
   ],
   pecho: [
     {nombre:"Press banca inclinado con barra", en:"Incline Barbell Bench Press", target:"3 series x 8-10 reps", sets:3, equipo:"Barra", musculo:"Pecho superior"},
@@ -1451,7 +1455,11 @@ const BANCO_EJERCICIOS = {
     {nombre:"Elevación de piernas en máquina", en:"Captain's Chair Leg Raise", target:"3 series x 12-15 reps", sets:3, equipo:"Máquina", musculo:"Abdomen inferior"},
     {nombre:"Rueda abdominal", en:"Ab Wheel Rollout", target:"3 series x 10 reps", sets:3, equipo:"Peso corporal", musculo:"Abdomen inferior"},
     {nombre:"Plancha lateral", en:"Side Plank", target:"3 series x 30 seg por lado", sets:3, equipo:"Peso corporal", musculo:"Oblicuos"},
-    {nombre:"Giro ruso (Russian twist)", en:"Russian Twist", target:"3 series x 15 reps por lado", sets:3, equipo:"Peso corporal", musculo:"Oblicuos"}
+    {nombre:"Giro ruso (Russian twist)", en:"Russian Twist", target:"3 series x 15 reps por lado", sets:3, equipo:"Peso corporal", musculo:"Oblicuos"},
+    {nombre:"Crunch básico", en:"Basic Crunch", target:"3 series x 15-20 reps", sets:3, equipo:"Peso corporal", musculo:"Abdomen superior"},
+    {nombre:"Crunch de rodillas en polea", en:"Kneeling Cable Crunch", target:"3 series x 15 reps", sets:3, equipo:"Polea / cable", musculo:"Abdomen superior"},
+    {nombre:"Giro ruso con polea", en:"Cable Russian Twist", target:"3 series x 15 reps por lado", sets:3, equipo:"Polea / cable", musculo:"Oblicuos"},
+    {nombre:"Rotación de torso con polea", en:"Cable Torso Rotation", target:"3 series x 15 reps por lado", sets:3, equipo:"Polea / cable", musculo:"Oblicuos"}
   ],
   espalda: [
     {nombre:"Dominadas (agarre ancho)", en:"Wide-Grip Pull-Up", target:"4 series x 8-10 reps", sets:4, equipo:"Peso corporal", musculo:"Dorsal ancho"},
@@ -1465,7 +1473,11 @@ const BANCO_EJERCICIOS = {
     {nombre:"Remo en máquina", en:"Row Machine", target:"3 series x 12 reps", sets:3, equipo:"Máquina", musculo:"Espalda media"},
     {nombre:"Remo en T (T-bar row)", en:"T-Bar Row", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Espalda media"},
     {nombre:"Peso muerto convencional", en:"Conventional Deadlift", target:"3 series x 8 reps", sets:3, equipo:"Barra", musculo:"Espalda baja"},
-    {nombre:"Hiperextensiones (lumbares)", en:"Back Extension", target:"3 series x 12-15 reps", sets:3, equipo:"Peso corporal", musculo:"Espalda baja"}
+    {nombre:"Hiperextensiones (lumbares)", en:"Back Extension", target:"3 series x 12-15 reps", sets:3, equipo:"Peso corporal", musculo:"Espalda baja"},
+    {nombre:"Remo inclinado en polea baja", en:"Incline Cable Row", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Espalda media"},
+    {nombre:"Remo con mancuernas inclinado", en:"Incline Dumbbell Row", target:"3 series x 12 reps", sets:3, equipo:"Mancuernas", musculo:"Espalda media"},
+    {nombre:"Remo con mancuerna apoyo en banco", en:"Bench-Supported Dumbbell Row", target:"3 series x 12 reps por lado", sets:3, equipo:"Mancuernas", musculo:"Espalda media"},
+    {nombre:"Pull-over en polea de rodillas", en:"Kneeling Cable Pullover", target:"3 series x 12 reps", sets:3, equipo:"Polea / cable", musculo:"Dorsal ancho"}
   ],
   biceps: [
     {nombre:"Curl de bíceps con barra recta", en:"Barbell Curl", target:"3 series x 10 reps", sets:3, equipo:"Barra", musculo:"Bíceps"},
@@ -1498,60 +1510,62 @@ const GRUPO_COLOR = {
 function defaultRutina() {
   return {
     lunes: { grupoPrincipal:"pecho",
-      manana: { tipo:"pesas", titulo:"Push A", grupo:"pecho", ejercicios:[
-        "Press banca plano con barra",
-        "Press banca inclinado con mancuernas",
-        "Elevaciones laterales con mancuernas",
+      manana: { tipo:"pesas", titulo:"Pecho + Tríceps A", grupo:"pecho", ejercicios:[
+        "Press banca inclinado con barra",
+        "Press banca plano con mancuernas",
+        "Cruces en polea alta a baja",
         "Extensión de tríceps en polea (cuerda)",
-        "Press francés con barra"
+        "Fondos en banco (bench dips)"
       ], series:3, reps:8},
       tarde: { tipo:"libre", titulo:"Libre" }
     },
     martes: { grupoPrincipal:"espalda",
-      manana: { tipo:"pesas", titulo:"Pull A", grupo:"espalda", ejercicios:[
-        "Dominadas",
-        "Remo con barra",
+      manana: { tipo:"pesas", titulo:"Espalda + Bíceps A", grupo:"espalda", ejercicios:[
         "Jalón al pecho en polea (agarre ancho)",
-        "Curl de bíceps con barra recta",
-        "Curl martillo"
-      ], series:3, reps:8},
-      tarde: { tipo:"libre", titulo:"Libre" }
-    },
-    miercoles: { grupoPrincipal:"descanso",
-      manana: { tipo:"descanso", titulo:"Descanso" },
-      tarde: { tipo:"descanso", titulo:"Descanso" }
-    },
-    jueves: { grupoPrincipal:"pecho",
-      manana: { tipo:"pesas", titulo:"Push B", grupo:"pecho", ejercicios:[
-        "Press de pecho en máquina (Chest Press)",
-        "Aperturas en máquina (pec-deck)",
-        "Press militar con mancuernas",
-        "Extensión de tríceps en polea (barra recta)",
-        "Extensión sobre la cabeza en polea"
-      ], series:3, reps:8},
-      tarde: { tipo:"libre", titulo:"Libre" }
-    },
-    viernes: { grupoPrincipal:"espalda",
-      manana: { tipo:"pesas", titulo:"Pull B", grupo:"espalda", ejercicios:[
-        "Remo en polea baja (agarre estrecho)",
-        "Peso muerto rumano con mancuernas",
-        "Jalón al pecho en polea (agarre neutro)",
-        "Curl concentrado",
+        "Remo en máquina",
+        "Remo con mancuerna a una mano",
+        "Curl con mancuernas alternado",
         "Curl en banco scott con barra"
       ], series:3, reps:8},
       tarde: { tipo:"libre", titulo:"Libre" }
     },
-    sabado: { grupoPrincipal:"piernas",
-      manana: { tipo:"pesas", titulo:"Piernas + Hombros", grupo:"piernas", ejercicios:[
-        "Sentadilla con barra",
-        "Peso muerto rumano con barra",
-        "Hip thrust con barra",
-        "Curl femoral acostado",
-        "Elevación de talones de pie en máquina",
+    miercoles: { grupoPrincipal:"hombros",
+      manana: { tipo:"pesas", titulo:"Hombros + Piernas Cuád", grupo:"hombros", ejercicios:[
         "Press militar con mancuernas",
         "Elevaciones laterales con mancuernas",
-        "Pájaros con mancuernas (deltoide posterior)"
+        "Face pull en polea",
+        "Prensa de piernas (pies juntos)",
+        "Extensión de cuádriceps"
+      ], series:3, reps:10},
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    jueves: { grupoPrincipal:"descanso",
+      manana: { tipo:"descanso", titulo:"Descanso" },
+      tarde: { tipo:"descanso", titulo:"Descanso" }
+    },
+    viernes: { grupoPrincipal:"pecho",
+      manana: { tipo:"pesas", titulo:"Pecho + Tríceps B", grupo:"pecho", ejercicios:[
+        "Press banca plano con barra",
+        "Aperturas en máquina (pec-deck)",
+        "Extensión de tríceps en polea (barra recta)",
+        "Extensión de tríceps sobre la cabeza con mancuerna",
+        "Press de tríceps en máquina"
       ], series:3, reps:8},
+      tarde: { tipo:"libre", titulo:"Libre" }
+    },
+    sabado: { grupoPrincipal:"piernas",
+      manana: { tipo:"pesas", titulo:"Espalda B + Bíceps B + Hombros + Femoral", grupo:"espalda", ejercicios:[
+        "Dominadas (agarre ancho)",
+        "Pull-over con mancuerna",
+        "Curl de bíceps con barra Z",
+        "Curl en polea baja",
+        "Curl martillo",
+        "Elevaciones laterales en máquina",
+        "Pájaros en máquina (pec-deck inverso)",
+        "Peso muerto rumano con barra",
+        "Curl femoral sentado",
+        "Hip thrust en máquina"
+      ], series:3, reps:10},
       tarde: { tipo:"libre", titulo:"Libre" }
     },
     domingo: { grupoPrincipal:"descanso",
