@@ -814,6 +814,12 @@
           <span id="feelingToggleSlider" style="position:absolute; inset:0; background:var(--border); border-radius:13px; cursor:pointer; transition:0.2s;"></span>
         </label>
       </div>
+      <!-- Restaurar rutina -->
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+        <div style="font-size:14px; font-weight:600; margin-bottom:4px;">🔄 Rutina por defecto</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Restaura la rutina PPL 5 días (Nov 2026)</div>
+        <button class="btn-ghost" style="color:var(--accent); border-color:var(--accent);" onclick="resetToDefaultRutina()">Restaurar mi rutina</button>
+      </div>
       <!-- Tiempo de descanso -->
       <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
         <div>
@@ -4914,9 +4920,18 @@ function obApplyRutina(nivel, dias) {
 }
 
 function checkOnboarding() {
-  if(!DATA.onboardingDone && !DATA.nombre) {
+  if(!DATA.onboardingDone) {
     document.getElementById('onboardingOverlay').classList.add('show');
   }
+}
+
+function resetToDefaultRutina() {
+  if(!confirm('¿Restaurar la rutina por defecto? Se perderá la rutina actual.')) return;
+  DATA.rutina = defaultRutina();
+  DATA.rutinaVersion = RUTINA_VERSION;
+  saveData(DATA);
+  renderRoutine();
+  showToast('✅ Rutina restaurada a la versión por defecto');
 }
 
 // ===== PREFERENCIA CARITAS =====
