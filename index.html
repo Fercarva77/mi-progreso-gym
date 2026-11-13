@@ -1602,7 +1602,7 @@ function saveData(d) {
 let DATA = loadData();
 if(!DATA.rutina) DATA.rutina = defaultRutina();
 // Versión del plan — si cambió, actualiza la rutina pero NO el historial
-const RUTINA_VERSION = 5; // incrementar cada vez que cambie el plan
+const RUTINA_VERSION = 6; // incrementar cada vez que cambie el plan
 if(!DATA.rutinaVersion || DATA.rutinaVersion < RUTINA_VERSION) {
   DATA.rutina = defaultRutina();
   DATA.rutinaVersion = RUTINA_VERSION;
